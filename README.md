@@ -589,7 +589,7 @@ File ini adalah server TCP multithreaded yang menangani koneksi dua pemain:
 | **R** | Serangan 1 (Attack 1) |
 | **T** | Serangan 2 (Attack 2) |
 
-### **PLAYER ` (WIZARD) - Sisi Server 1**
+### **⚕️ PLAYER 1` (WIZARD) - Sisi Server 1**
 | Tombol | Fungsi |
 |--------|--------|
 | **← (Panah Kiri)** | Bergerak ke Kiri |
