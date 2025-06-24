@@ -512,4 +512,4 @@ https://github.com/user-attachments/assets/cf61b57a-98f0-40c7-84c6-26f0ad48f174
 ## Kontak
 
 - Pengembang: **Alvin Zanua Putra**
-- Website Developer Pengembang : [Alvin Zanua Putra Website](https:alvinzanuaputra.vercel.app)
+- Website Developer Pengembang : [Alvin Zanua Putra Website](https://alvinzanuaputra.vercel.app)
