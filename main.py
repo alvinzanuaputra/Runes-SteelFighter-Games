@@ -1,6 +1,9 @@
 import pygame
 from pygame import mixer
 from fighter import Fighter
+import socket
+import pickle
+
 
 mixer.init()
 pygame.init()
