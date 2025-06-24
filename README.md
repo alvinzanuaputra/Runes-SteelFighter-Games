@@ -505,7 +505,7 @@ File `fighter.py` mendefinisikan kelas `Fighter` yang bertanggung jawab atas per
 
 **VIDEO DEMO :**
 
-https://github.com/user-attachments/assets/55333f5b-4be9-425b-904a-65b291eb0949
+https://github.com/user-attachments/assets/cf61b57a-98f0-40c7-84c6-26f0ad48f174
 
 <!-- FOOTER END -->
 
