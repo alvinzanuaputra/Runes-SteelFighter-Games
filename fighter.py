@@ -34,7 +34,7 @@ class Fighter():
             animation_list.append(temp_img_list)
         return animation_list
 
-    def move(self, screen_width, screen_height, surface, target, round_over):
+    def move(self, screen_width, screen_height, surface, target, round_over, events):
         SPEED = 10
         GRAVITY = 2
         dx = 0
@@ -55,12 +55,6 @@ class Fighter():
                 if key[pygame.K_w] and self.jump == False:
                     self.vel_y = -30
                     self.jump = True
-                if key[pygame.K_r] or key[pygame.K_t]:
-                    self.attack(target)
-                    if key[pygame.K_r]:
-                        self.attack_type = 1
-                    if key[pygame.K_t]:
-                        self.attack_type = 2
             if self.player == 2:
                 if key[pygame.K_LEFT]:
                     dx = -SPEED
@@ -71,12 +65,23 @@ class Fighter():
                 if key[pygame.K_UP] and self.jump == False:
                     self.vel_y = -30
                     self.jump = True
-                if key[pygame.K_j] or key[pygame.K_k]:
-                    self.attack(target)
-                    if key[pygame.K_j]:
-                        self.attack_type = 1
-                    if key[pygame.K_k]:
-                        self.attack_type = 2
+
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    if self.player == 1:
+                        if event.key == pygame.K_r:
+                            self.attack_type = 1
+                            self.attack(target)
+                        elif event.key == pygame.K_t:
+                            self.attack_type = 2
+                            self.attack(target)
+                    elif self.player == 2:
+                        if event.key == pygame.K_j:
+                            self.attack_type = 1
+                            self.attack(target)
+                        elif event.key == pygame.K_k:
+                            self.attack_type = 2
+                            self.attack(target)
 
         self.vel_y += GRAVITY
         dy += self.vel_y
@@ -146,7 +151,7 @@ class Fighter():
                 self.rect.centerx - (2 * self.rect.width * self.flip),
                 self.rect.y, 2 * self.rect.width, self.rect.height)
             if attacking_rect.colliderect(target.rect):
-                target.health -= 10
+                # Di multiplayer, sebenarnya ini tidak diperlukan karena HP dikendalikan server
                 target.hit = True
 
     def update_action(self, new_action):
@@ -194,9 +199,8 @@ class RemoteFighter:
     def update(self, animation_list):
         animation_cooldown = 50
         if pygame.time.get_ticks() - self.update_time > animation_cooldown:
-          self.frame_index = (self.frame_index + 1) % len(animation_list[self.action])
-          self.update_time = pygame.time.get_ticks()
-
+            self.frame_index = (self.frame_index + 1) % len(animation_list[self.action])
+            self.update_time = pygame.time.get_ticks()
 
     def draw(self, surface, animation_list):
         img = animation_list[self.action][self.frame_index % len(animation_list[self.action])]

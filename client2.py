@@ -104,7 +104,6 @@ while run:
     health_bar_width = int(SCREEN_WIDTH * 0.4)
     margin = int(SCREEN_WIDTH * 0.02)
 
- 
     draw_health_bar(local_fighter.health, margin, 20, health_bar_width)
     draw_text(local_label + str(score[player_num]), score_font, RED, margin, 60)
 
@@ -113,9 +112,16 @@ while run:
         draw_text(enemy_label + str(score[1 - player_num]), score_font, RED,
                   SCREEN_WIDTH - health_bar_width - margin, 60)
 
- 
+    events = pygame.event.get()
+    for event in events:
+        if event.type == pygame.QUIT:
+            run = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                run = False
+
     if intro_count <= 0:
-        local_fighter.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, remote_fighter, round_over)
+        local_fighter.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, remote_fighter, round_over, events)
     else:
         countdown_x = int(SCREEN_WIDTH / 2 - 40)
         countdown_y = int(SCREEN_HEIGHT / 3)
@@ -174,14 +180,8 @@ while run:
         screen.blit(victory_img, (360, 150))
         if pygame.time.get_ticks() - round_over_time > ROUND_OVER_COOLDOWN:
             round_over = False
-            intro_count = 3
-
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+            # intro_count = 3
             run = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                run = False
 
     if local_fighter.health <= 0:
         print("HP habis, keluar dari game...")
