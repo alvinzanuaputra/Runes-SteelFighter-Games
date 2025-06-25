@@ -95,7 +95,7 @@ class GameClient:
     def _init_network(self):
         """Initialize network connection"""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(("localhost", 8889))
+        self.sock.connect(("localhost", 8888))
         player_data = pickle.loads(self.sock.recv(1024))
         self.player_num = player_data["player"]
         print(f"Connected as Player {self.player_num}")
