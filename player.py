@@ -47,12 +47,18 @@ class GameClient:
         self.RED = (255, 0, 0)
         self.YELLOW = (255, 255, 0)
         self.WHITE = (255, 255, 255)
+        self.GREEN = (0, 255, 0)
         
         self.intro_count = 3
         self.last_count_update = pygame.time.get_ticks()
         self.score = [0, 0]
         self.round_over = False
+        self.game_over = False
+        self.game_result = None  # 'win' atau 'lose'
+        self.result_sound_played = False
+        self.game_over_delay_time = None  # Waktu ketika game over terjadi
         self.ROUND_OVER_COOLDOWN = 2000
+        self.GAME_OVER_DELAY = 1500  # Delay 1.5 detik sebelum menampilkan hasil
         
         # Fighter data
         self.WARRIOR_SIZE = 162
@@ -85,6 +91,12 @@ class GameClient:
         self.magic_fx = pygame.mixer.Sound("assets/audio/magic.wav")
         self.magic_fx.set_volume(0.75)
         
+        # Victory/Defeat sounds
+        self.victory_fx = pygame.mixer.Sound("assets/audio/victory.wav")
+        self.victory_fx.set_volume(0.8)
+        self.defeat_fx = pygame.mixer.Sound("assets/audio/defeat.wav")
+        self.defeat_fx.set_volume(0.8)
+        
         # Images
         self.bg_image = pygame.image.load("assets/images/background/background.jpg").convert_alpha()
         self.warrior_sheet = pygame.image.load("assets/images/warrior/Sprites/warrior.png").convert_alpha()
@@ -95,6 +107,8 @@ class GameClient:
         """Initialize fonts"""
         self.count_font = pygame.font.Font("assets/fonts/turok.ttf", 80)
         self.score_font = pygame.font.Font("assets/fonts/turok.ttf", 30)
+        self.result_font = pygame.font.Font("assets/fonts/turok.ttf", 60)
+        self.message_font = pygame.font.Font("assets/fonts/turok.ttf", 40)
         
     def _init_network(self):
         """Initialize network connection"""
@@ -202,21 +216,9 @@ class GameClient:
             if event.type == pygame.QUIT:
                 self.run = False
             elif event.type == pygame.KEYDOWN:
-                # Cek cooldown serangan global
-                if current_time - self.last_attack_time >= self.ATTACK_COOLDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        self.run = False
-                    elif event.key == pygame.K_F11:
-                        self.toggle_fullscreen()
-                    elif event.key == pygame.K_RETURN and (
-                        pygame.key.get_pressed()[pygame.K_LALT] or 
-                        pygame.key.get_pressed()[pygame.K_RALT]
-                    ):
-                        self.toggle_fullscreen()
-                    
-                    # Reset waktu serangan terakhir
-                    self.last_attack_time = current_time
-            
+                # Tambahkan penanganan tombol 'q' untuk keluar
+                if event.key == pygame.K_q:
+                    self.run = False
             elif event.type == pygame.VIDEORESIZE:
                 if not self.is_fullscreen:
                     self.handle_screen_resize(event.w, event.h)
@@ -224,17 +226,6 @@ class GameClient:
                 pygame.display.flip()
         return events
     
-    def handle_countdown(self):
-        """Handle countdown logic"""
-        if self.intro_count > 0:
-            countdown_x = int(self.SCREEN_WIDTH / 2 - 40)
-            countdown_y = int(self.SCREEN_HEIGHT / 3)
-            self.draw_text(str(self.intro_count), self.count_font, self.RED, countdown_x, countdown_y)
-            
-            if (pygame.time.get_ticks() - self.last_count_update) >= 1000:
-                self.intro_count -= 1
-                self.last_count_update = pygame.time.get_ticks()
-                
     def handle_network(self):
         """Handle network communication"""
         send_data = {
@@ -272,19 +263,104 @@ class GameClient:
                 self.score[1 - self.player_num] += 1
                 self.round_over = True
                 self.round_over_time = pygame.time.get_ticks()
+                # Set game result dan mulai delay
+                self.game_result = 'lose'
+                self.game_over_delay_time = pygame.time.get_ticks()
             elif self.remote_fighter.health <= 0:
                 self.score[self.player_num] += 1
                 self.round_over = True
                 self.round_over_time = pygame.time.get_ticks()
-        else:
-            victory_x = (self.SCREEN_WIDTH - self.victory_img.get_width()) // 2
-            victory_y = self.SCREEN_HEIGHT // 4
-            self.screen.blit(self.victory_img, (victory_x, victory_y))
+                # Set game result dan mulai delay
+                self.game_result = 'win'
+                self.game_over_delay_time = pygame.time.get_ticks()
+        
+        # Cek apakah delay sudah selesai
+        if self.game_over_delay_time and not self.game_over:
+            if pygame.time.get_ticks() - self.game_over_delay_time >= self.GAME_OVER_DELAY:
+                self.game_over = True
+    
+    def draw_game_result(self):
+        """Draw victory or defeat screen"""
+        if not self.game_over:
+            return
             
-            if pygame.time.get_ticks() - self.round_over_time > self.ROUND_OVER_COOLDOWN:
-                self.round_over = False
-                self.run = False
-                
+        # Play sound effect only once
+        if not self.result_sound_played:
+            if self.game_result == 'win':
+                self.victory_fx.play()
+            elif self.game_result == 'lose':
+                self.defeat_fx.play()
+            self.result_sound_played = True
+        
+        # Create semi-transparent overlay
+        overlay = pygame.Surface((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Tentukan warna dan teks berdasarkan hasil
+        if self.game_result == 'win':
+            victory_text = "VICTORY"
+            message_text = "You Win!"
+            text_color = self.GREEN
+        else:
+            victory_text = "DEFEAT"
+            message_text = "You Lose!"
+            text_color = self.RED
+        
+        # Draw victory/defeat text
+        victory_surface = self.result_font.render(victory_text, True, text_color)
+        victory_x = (self.SCREEN_WIDTH - victory_surface.get_width()) // 2
+        victory_y = self.SCREEN_HEIGHT // 3
+        self.screen.blit(victory_surface, (victory_x, victory_y))
+        
+        # Draw message
+        message_surface = self.message_font.render(message_text, True, text_color)
+        message_x = (self.SCREEN_WIDTH - message_surface.get_width()) // 2
+        message_y = victory_y + 80
+        self.screen.blit(message_surface, (message_x, message_y))
+        
+        # Tambahkan tombol quit
+        quit_button_width = 150  # Diperkecil dari 200
+        quit_button_height = 50  # Diperkecil dari 70
+        quit_button_x = (self.SCREEN_WIDTH - quit_button_width) // 2
+        quit_button_y = message_y + 100
+        
+        # Warna tombol
+        button_color = (255, 255, 255)  # Putih
+        hover_color = (230, 230, 230)  # Abu-abu muda saat dihover
+        click_color = (200, 200, 200)  # Abu-abu gelap saat diklik
+        
+        # Dapatkan posisi mouse dan status klik
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        mouse_button = pygame.mouse.get_pressed()
+        
+        # Periksa apakah mouse berada di atas tombol
+        mouse_over_button = (
+            quit_button_x < mouse_x < quit_button_x + quit_button_width and
+            quit_button_y < mouse_y < quit_button_y + quit_button_height
+        )
+        
+        # Tentukan warna tombol berdasarkan status
+        if mouse_over_button and mouse_button[0]:  # Klik kiri
+            current_color = click_color
+        elif mouse_over_button:
+            current_color = hover_color
+        else:
+            current_color = button_color
+        
+        # Gambar tombol
+        pygame.draw.rect(self.screen, current_color, (quit_button_x, quit_button_y, quit_button_width, quit_button_height))
+        
+        # Tambahkan teks "Quit" di tengah tombol
+        quit_text = self.result_font.render("QUIT", True, (0, 0, 0))  # Teks hitam
+        text_x = quit_button_x + (quit_button_width - quit_text.get_width()) // 2
+        text_y = quit_button_y + (quit_button_height - quit_text.get_height()) // 2
+        self.screen.blit(quit_text, (text_x, text_y))
+        
+        # Kembalikan koordinat tombol untuk penanganan klik
+        return (quit_button_x, quit_button_y, quit_button_width, quit_button_height)
+
     def draw_ui(self):
         """Draw user interface elements"""
         health_bar_width = int(self.SCREEN_WIDTH * 0.4)
@@ -322,10 +398,11 @@ class GameClient:
             
     def update_fighters(self):
         """Update fighter states"""
-        self.local_fighter.update()
-        
-        if self.enemy_connected:
-            self.remote_fighter.update(self.remote_animation)
+        if not self.game_over:
+            self.local_fighter.update()
+            
+            if self.enemy_connected:
+                self.remote_fighter.update(self.remote_animation)
             
     def draw_fighters(self):
         """Draw fighters"""
@@ -336,12 +413,61 @@ class GameClient:
             
     def check_game_over(self):
         """Check if game should end"""
-        if self.local_fighter.health <= 0:
-            print("HP habis, keluar dari game...")
-            self.run = False
+        # Hapus auto quit, biarkan pemain memilih
+        pass
             
+    def draw_quit_button(self):
+        """Menggambar tombol quit di layar"""
+        # Tentukan ukuran dan posisi tombol
+        button_width = 100
+        button_height = 50
+        button_x = self.SCREEN_WIDTH - button_width - 20  # 20 pixel dari tepi kanan
+        button_y = 20  # 20 pixel dari bagian atas
+
+        # Warna tombol
+        button_color = (200, 50, 50)  # Merah
+        hover_color = (255, 100, 100)  # Merah muda saat dihover
+        text_color = self.WHITE
+
+        # Dapatkan posisi mouse
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        # Periksa apakah mouse berada di atas tombol
+        mouse_over_button = (
+            button_x < mouse_x < button_x + button_width and
+            button_y < mouse_y < button_y + button_height
+        )
+
+        # Gambar tombol dengan warna yang berbeda saat dihover
+        current_color = hover_color if mouse_over_button else button_color
+        pygame.draw.rect(self.screen, current_color, (button_x, button_y, button_width, button_height))
+
+        # Tambahkan teks "Quit" di tengah tombol
+        quit_text = self.message_font.render("Quit", True, text_color)
+        text_x = button_x + (button_width - quit_text.get_width()) // 2
+        text_y = button_y + (button_height - quit_text.get_height()) // 2
+        self.screen.blit(quit_text, (text_x, text_y))
+
+        # Kembalikan koordinat tombol untuk penanganan klik
+        return (button_x, button_y, button_width, button_height)
+
+    def handle_quit_button(self, events, quit_button_rect):
+        """Menangani klik tombol quit"""
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        button_x, button_y, button_width, button_height = quit_button_rect
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # Periksa apakah tombol kiri mouse diklik di area tombol
+                if event.button == 1:  # Tombol kiri mouse
+                    if (button_x < mouse_x < button_x + button_width and
+                        button_y < mouse_y < button_y + button_height):
+                        self.run = False
+                        break
+
     def run_game(self):
         """Main game loop"""
+        quit_button_rect = None
         while self.run:
             self.clock.tick(self.FPS)
             
@@ -354,11 +480,12 @@ class GameClient:
             # Draw UI
             self.draw_ui()
             
-            # Handle countdown
-            self.handle_countdown()
+            # Handle countdown (only if game not over)
+            if not self.game_over:
+                self.handle_countdown()
             
-            # Handle fighter movement (only after countdown)
-            if self.intro_count <= 0 and not self.round_over:
+            # Handle fighter movement (only after countdown and if game not over)
+            if self.intro_count <= 0 and not self.round_over and not self.game_over:
                 self.local_fighter.move(
                     self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 
                     self.screen, self.remote_fighter, 
@@ -368,14 +495,33 @@ class GameClient:
             # Update fighters
             self.update_fighters()
             
-            # Handle network communication
-            self.handle_network()
+            # Handle network communication (only if game not over)
+            if not self.game_over:
+                self.handle_network()
             
             # Draw fighters
             self.draw_fighters()
             
             # Handle round logic
             self.handle_round_logic()
+            
+            # Draw game result screen and get quit button rect
+            if self.game_over:
+                quit_button_rect = self.draw_game_result()
+                
+                # Tangani klik tombol quit di layar hasil
+                if quit_button_rect:
+                    mouse_x, mouse_y = pygame.mouse.get_pos()
+                    button_x, button_y, button_width, button_height = quit_button_rect
+
+                    for event in events:
+                        if event.type == pygame.MOUSEBUTTONDOWN:
+                            # Periksa apakah tombol kiri mouse diklik di area tombol
+                            if event.button == 1:  # Tombol kiri mouse
+                                if (button_x < mouse_x < button_x + button_width and
+                                    button_y < mouse_y < button_y + button_height):
+                                    self.run = False
+                                    break
             
             # Check game over conditions
             self.check_game_over()
@@ -388,6 +534,13 @@ class GameClient:
         if hasattr(self, 'sock'):
             self.sock.close()
         pygame.quit()
+
+    def handle_countdown(self):
+        """Handle countdown logic"""
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_count_update >= 1000:
+            self.last_count_update = current_time
+            self.intro_count -= 1
 
 
 def main():
