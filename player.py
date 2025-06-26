@@ -68,6 +68,10 @@ class GameClient:
         self.WARRIOR_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
         self.WIZARD_ANIMATION_STEPS = [8, 8, 1, 8, 8, 3, 7]
         
+        # Tambahkan konstanta untuk kontrol serangan
+        self.ATTACK_COOLDOWN = 500  # Cooldown global untuk mencegah spam (dalam milidetik)
+        self.last_attack_time = 0
+        
     def _init_assets(self):
         """Initialize game assets (images, sounds)"""
         # Music
@@ -95,7 +99,7 @@ class GameClient:
     def _init_network(self):
         """Initialize network connection"""
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(("localhost", 8889))
+        self.sock.connect(("localhost", 8888))
         player_data = pickle.loads(self.sock.recv(1024))
         self.player_num = player_data["player"]
         print(f"Connected as Player {self.player_num}")
@@ -192,19 +196,27 @@ class GameClient:
     def handle_events(self):
         """Handle pygame events"""
         events = pygame.event.get()
+        current_time = pygame.time.get_ticks()
+        
         for event in events:
             if event.type == pygame.QUIT:
                 self.run = False
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.run = False
-                elif event.key == pygame.K_F11:
-                    self.toggle_fullscreen()
-                elif event.key == pygame.K_RETURN and (
-                    pygame.key.get_pressed()[pygame.K_LALT] or 
-                    pygame.key.get_pressed()[pygame.K_RALT]
-                ):
-                    self.toggle_fullscreen()
+                # Cek cooldown serangan global
+                if current_time - self.last_attack_time >= self.ATTACK_COOLDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.run = False
+                    elif event.key == pygame.K_F11:
+                        self.toggle_fullscreen()
+                    elif event.key == pygame.K_RETURN and (
+                        pygame.key.get_pressed()[pygame.K_LALT] or 
+                        pygame.key.get_pressed()[pygame.K_RALT]
+                    ):
+                        self.toggle_fullscreen()
+                    
+                    # Reset waktu serangan terakhir
+                    self.last_attack_time = current_time
+            
             elif event.type == pygame.VIDEORESIZE:
                 if not self.is_fullscreen:
                     self.handle_screen_resize(event.w, event.h)
@@ -278,24 +290,34 @@ class GameClient:
         health_bar_width = int(self.SCREEN_WIDTH * 0.4)
         margin = int(self.SCREEN_WIDTH * 0.02)
         
+        # Tentukan posisi HP berdasarkan nomor player
+        if self.player_num == 0:
+            # Player 1 (kiri)
+            local_health_x = margin
+            enemy_health_x = self.SCREEN_WIDTH - health_bar_width - margin
+        else:
+            # Player 2 (kanan)
+            local_health_x = self.SCREEN_WIDTH - health_bar_width - margin
+            enemy_health_x = margin
+        
         # Draw local player UI
-        self.draw_health_bar(self.local_fighter.health, margin, 20, health_bar_width)
+        self.draw_health_bar(self.local_fighter.health, local_health_x, 20, health_bar_width)
         self.draw_text(
             self.local_label + str(self.score[self.player_num]), 
-            self.score_font, self.RED, margin, 60
+            self.score_font, self.RED, local_health_x, 60
         )
         
         # Draw enemy player UI if connected
         if self.enemy_connected:
             self.draw_health_bar(
                 self.remote_fighter.health, 
-                self.SCREEN_WIDTH - health_bar_width - margin, 20, 
+                enemy_health_x, 20, 
                 health_bar_width
             )
             self.draw_text(
                 self.enemy_label + str(self.score[1 - self.player_num]), 
                 self.score_font, self.RED,
-                self.SCREEN_WIDTH - health_bar_width - margin, 60
+                enemy_health_x, 60
             )
             
     def update_fighters(self):
@@ -336,7 +358,7 @@ class GameClient:
             self.handle_countdown()
             
             # Handle fighter movement (only after countdown)
-            if self.intro_count <= 0:
+            if self.intro_count <= 0 and not self.round_over:
                 self.local_fighter.move(
                     self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 
                     self.screen, self.remote_fighter, 

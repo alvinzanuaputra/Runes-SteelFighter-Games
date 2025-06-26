@@ -20,6 +20,8 @@ class Fighter:
         self.attacking = False
         self.attack_type = 0
         self.attack_cooldown = 0
+        self.max_attack_cooldown = 50  # Cooldown maksimum untuk serangan
+        self.last_attack_time = 0  # Tambahkan pelacakan waktu serangan terakhir
         self.attack_sound = sound
         self.hit = False
         self.health = 100
@@ -44,11 +46,15 @@ class Fighter:
         self.attack_type = 0
 
         key = pygame.key.get_pressed()
+        current_time = pygame.time.get_ticks()
 
         if not self.attacking and self.alive and not round_over:
             dx, self.running = self._handle_movement(key, SPEED)
             dy = self._handle_jumping(key, dy)
-            self._handle_attacks(events, target)
+            
+            # Tambahkan logika serangan dengan pengecekan waktu
+            if current_time - self.last_attack_time > self.max_attack_cooldown:
+                self._handle_attacks(events, target)
 
         self.vel_y += GRAVITY
         dy += self.vel_y
@@ -57,9 +63,6 @@ class Fighter:
         dy = self._constrain_vertical_movement(screen_height, dy)
 
         self._update_facing_direction(target)
-
-        if self.attack_cooldown > 0:
-            self.attack_cooldown -= 1
 
         self.rect.x += dx
         self.rect.y += dy
@@ -95,20 +98,26 @@ class Fighter:
     def _handle_attacks(self, events, target):
         for event in events:
             if event.type == pygame.KEYDOWN:
-                if self.player == 1:
-                    if event.key == pygame.K_r:
-                        self.attack_type = 1
-                        self.attack(target)
-                    elif event.key == pygame.K_t:
-                        self.attack_type = 2
-                        self.attack(target)
-                elif self.player == 2:
-                    if event.key == pygame.K_j:
-                        self.attack_type = 1
-                        self.attack(target)
-                    elif event.key == pygame.K_k:
-                        self.attack_type = 2
-                        self.attack(target)
+                current_time = pygame.time.get_ticks()
+                if current_time - self.last_attack_time > self.max_attack_cooldown:
+                    if self.player == 1:
+                        if event.key == pygame.K_k:
+                            self.attack_type = 1
+                            self.attack(target)
+                            self.last_attack_time = current_time
+                        elif event.key == pygame.K_l:
+                            self.attack_type = 2
+                            self.attack(target)
+                            self.last_attack_time = current_time
+                    elif self.player == 2:
+                        if event.key == pygame.K_z:
+                            self.attack_type = 1
+                            self.attack(target)
+                            self.last_attack_time = current_time
+                        elif event.key == pygame.K_x:
+                            self.attack_type = 2
+                            self.attack(target)
+                            self.last_attack_time = current_time
 
     def _constrain_horizontal_movement(self, screen_width, dx):
         if self.rect.left + dx < 0:
@@ -168,14 +177,24 @@ class Fighter:
                     self.attack_cooldown = 20
 
     def attack(self, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            self.attack_sound.play()
-            attacking_rect = pygame.Rect(
-                self.rect.centerx - (2 * self.rect.width * self.flip),
-                self.rect.y, 2 * self.rect.width, self.rect.height)
-            if attacking_rect.colliderect(target.rect):
-                target.hit = True
+        self.attacking = True
+        self.attack_sound.play()
+        attacking_rect = pygame.Rect(
+            self.rect.centerx - (2 * self.rect.width * self.flip),
+            self.rect.y, 2 * self.rect.width, self.rect.height)
+        
+        if attacking_rect.colliderect(target.rect):
+            target.hit = True
+            # Sesuaikan damage berdasarkan tipe serangan
+            if self.attack_type == 1:  # Serangan ringan
+                damage = 10
+            elif self.attack_type == 2:  # Serangan kuat
+                damage = 20
+            else:
+                damage = 0
+            
+            # Kurangi kesehatan target
+            target.health = max(0, target.health - damage)
 
     def update_action(self, new_action):
         if new_action != self.action:
