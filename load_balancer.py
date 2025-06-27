@@ -2,15 +2,20 @@ import socket
 import threading
 import pickle
 
-# Daftar server backend yang tersedia (port bisa ditambah sesuai kebutuhan)
 servers = [
+    # Round robin load balancing with 10 servers
     {"host": "localhost", "port": 8890, "clients": 0},
     {"host": "localhost", "port": 8891, "clients": 0},
-    # Tambah server lain jika perlu
+    {"host": "localhost", "port": 8892, "clients": 0},
+    {"host": "localhost", "port": 8893, "clients": 0},
+    {"host": "localhost", "port": 8894, "clients": 0},
+    {"host": "localhost", "port": 8895, "clients": 0},
+    {"host": "localhost", "port": 8896, "clients": 0},
+    {"host": "localhost", "port": 8897, "clients": 0},
+    {"host": "localhost", "port": 8898, "clients": 0},
+    {"host": "localhost", "port": 8899, "clients": 0}
 ]
-
 lock = threading.Lock()
-
 def forward(src, dst, server_ref):
     try:
         while True:
@@ -39,7 +44,6 @@ def handle_client(client_socket):
             client_socket.send(b"FULL")
             client_socket.close()
             return
-
     try:
         backend = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         backend.connect((selected_server["host"], selected_server["port"]))
@@ -47,8 +51,6 @@ def handle_client(client_socket):
         client_socket.send(b"ERROR CONNECTING TO SERVER")
         client_socket.close()
         return
-
-    # Start forwarding
     threading.Thread(target=forward, args=(client_socket, backend, selected_server)).start()
     threading.Thread(target=forward, args=(backend, client_socket, selected_server)).start()
 
@@ -57,7 +59,6 @@ def main():
     balancer.bind(("0.0.0.0", 8888))
     balancer.listen(10)
     print("[LOAD BALANCER] Listening on port 8888...")
-
     while True:
         client_sock, addr = balancer.accept()
         print(f"[LOAD BALANCER] Client connected from {addr}")

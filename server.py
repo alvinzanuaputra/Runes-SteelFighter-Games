@@ -35,7 +35,7 @@ def handle_client(conn, player_id):
                     if players[player_id].get("attack_type", 0) in [1, 2]:
                         if abs(att_x - target_x) < 150 and abs(att_y - target_y) < 100:
                             players[enemy_id]["health"] = max(0, players[enemy_id].get("health", 100) - 10)
-                        players[player_id]["attack_type"] = 0  # reset agar tidak spam hit
+                        players[player_id]["attack_type"] = 0
 
                 reply = {
                     "self": players[player_id],
@@ -52,7 +52,6 @@ def main():
     server.bind(("0.0.0.0", PORT))
     server.listen(2)
     print(f"[SERVER] Running on port {PORT}...")
-
     player_id = 0
     while player_id < 2:
         conn, addr = server.accept()

@@ -5,7 +5,6 @@ import threading
 import socket
 import time
 import os
-import signal
 
 class QuickLauncher:
     def __init__(self, root):
@@ -14,11 +13,9 @@ class QuickLauncher:
         self.root.geometry("800x600")
         self.root.resizable(False, False)
         self.root.configure(bg='#1a1a2e')
-
         self.processes = []
         self.server_ports = []
         self.next_port = 8890
-
         self._setup_styles()
         self._create_widgets()
         self.update_status()
@@ -26,12 +23,10 @@ class QuickLauncher:
     def _setup_styles(self):
         style = ttk.Style()
         style.theme_use('clam')
-        
         base_bg = '#1a1a2e'
         card_bg = '#16213e'
         text_fg = '#ffffff'
         font_family = 'Segoe UI'
-
         style_definitions = {
             'TFrame': {'background': base_bg},
             'Card.TFrame': {'background': card_bg, 'relief': 'raised', 'borderwidth': 1},
@@ -41,7 +36,6 @@ class QuickLauncher:
         }
         for name, conf in style_definitions.items():
             style.configure(name, **conf)
-
         button_styles = {
             'Action.TButton': {'background': '#0f3460', 'active': '#1e5f8b'},
             'Server.TButton': {'background': '#2d5a27', 'active': '#3d7a37'},
@@ -55,13 +49,10 @@ class QuickLauncher:
     def _create_widgets(self):
         main_frame = ttk.Frame(self.root, padding="20")
         main_frame.pack(fill="both", expand=True)
-
         ttk.Label(main_frame, text="RUNES STEELFIGHTER", style='Title.TLabel').pack()
         ttk.Label(main_frame, text="Game Server Management System", style='Subtitle.TLabel').pack(pady=(0, 20))
-
         control_frame = ttk.Frame(main_frame, style='Card.TFrame', padding=15)
         control_frame.pack(fill="x", pady=10)
-        
         btn_configs = [
             ("Start Load Balancer", 'Action.TButton', self.start_load_balancer),
             ("Launch Server", 'Server.TButton', self.start_server),
@@ -77,13 +68,11 @@ class QuickLauncher:
         ttk.Label(status_frame, text="System Status", style='Card.TLabel').pack(anchor="w")
         self.status_text = tk.Text(status_frame, height=4, bg='#0f1419', fg='#00d4ff', font=('JetBrains Mono', 9), relief='flat', borderwidth=0)
         self.status_text.pack(fill="x", pady=(5,0))
-        
         log_frame = ttk.Frame(main_frame, style='Card.TFrame', padding=15)
         log_frame.pack(fill="both", expand=True, pady=10)
         ttk.Label(log_frame, text="Activity Logs", style='Card.TLabel').pack(anchor="w")
         self.log_text = scrolledtext.ScrolledText(log_frame, bg='#0f1419', fg= 'white', font=('JetBrains Mono', 9), relief='flat', borderwidth=0)
         self.log_text.pack(fill="both", expand=True, pady=(5,0))
-
         for tag, color in {'success': '#28a745', 'error': '#dc3545', 'warning': '#ffc107', 'info': '#17a2b8'}.items():
             self.log_text.tag_configure(tag, foreground=color)
 
@@ -104,7 +93,6 @@ class QuickLauncher:
         if not os.path.exists(script_name):
             self.log(f"{script_name} script not found", 'error')
             return
-        
         command = ['python', script_name] + (args or [])
         try:
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,

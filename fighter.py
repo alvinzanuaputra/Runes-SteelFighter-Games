@@ -20,8 +20,8 @@ class Fighter:
         self.attacking = False
         self.attack_type = 0
         self.attack_cooldown = 0
-        self.max_attack_cooldown = 50  # Cooldown maksimum untuk serangan
-        self.last_attack_time = 0  # Tambahkan pelacakan waktu serangan terakhir
+        self.max_attack_cooldown = 50 
+        self.last_attack_time = 0 
         self.attack_sound = sound
         self.graunt_sound = graunt_sound
         self.hit = False
@@ -45,26 +45,18 @@ class Fighter:
         dy = 0
         self.running = False
         self.attack_type = 0
-
         key = pygame.key.get_pressed()
         current_time = pygame.time.get_ticks()
-
         if not self.attacking and self.alive and not round_over:
             dx, self.running = self._handle_movement(key, SPEED)
             dy = self._handle_jumping(key, dy)
-            
-            # Tambahkan logika serangan dengan pengecekan waktu
             if current_time - self.last_attack_time > self.max_attack_cooldown:
                 self._handle_attacks(events, target)
-
         self.vel_y += GRAVITY
         dy += self.vel_y
-
         dx = self._constrain_horizontal_movement(screen_width, dx)
         dy = self._constrain_vertical_movement(screen_height, dy)
-
         self._update_facing_direction(target)
-
         self.rect.x += dx
         self.rect.y += dy
 
@@ -188,15 +180,12 @@ class Fighter:
         
         if attacking_rect.colliderect(target.rect):
             target.hit = True
-            # Sesuaikan damage berdasarkan tipe serangan
-            if self.attack_type == 1:  # Serangan ringan
+            if self.attack_type == 1: 
                 damage = 10
-            elif self.attack_type == 2:  # Serangan kuat
+            elif self.attack_type == 2: 
                 damage = 20
             else:
                 damage = 0
-            
-            # Kurangi kesehatan target
             target.health = max(0, target.health - damage)
 
     def update_action(self, new_action):
@@ -209,7 +198,6 @@ class Fighter:
         img = pygame.transform.flip(self.image, self.flip, False)
         surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale),
                            self.rect.y - (self.offset[1] * self.image_scale)))
-
 
 class RemoteFighter:
     def __init__(self, data, sprite_sheet, image_scale, offset):
@@ -254,14 +242,10 @@ class RemoteFighter:
         surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale),
                            self.rect.y - (self.offset[1] * self.image_scale)))
 
-
 def main():
     pygame.init()
-    # Contoh: setup layar, sprite, dll.
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Fighter Game")
-
-    # Tambahkan logika game Anda di sini
     running = True
     while running:
         for event in pygame.event.get():
