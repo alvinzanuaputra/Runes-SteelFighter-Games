@@ -1,0 +1,140 @@
+from time import sleep
+import pygame
+import json
+import socket
+
+class InputBox:
+    def __init__(self, x, y, w, h, font, text=''):
+        self.rect = pygame.Rect(x, y, w, h)
+        self.color_inactive = pygame.Color('gray')
+        self.color_active = pygame.Color('dodgerblue2')
+        self.color = self.color_inactive
+        self.text = text
+        self.font = font
+        self.txt_surface = self.font.render(text, True, self.color)
+        self.active = False
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            # Toggle active state if clicked
+            if self.rect.collidepoint(event.pos):
+                self.active = not self.active
+            else:
+                self.active = False
+            self.color = self.color_active if self.active else self.color_inactive
+
+        if event.type == pygame.KEYDOWN:
+            if self.active:
+                if event.key == pygame.K_RETURN:
+                    return self.text
+                elif event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                else:
+                    self.text += event.unicode
+                self.txt_surface = self.font.render(self.text, True, pygame.Color('white'))
+        return None
+
+    def draw(self, screen):
+        screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
+        pygame.draw.rect(screen, self.color, self.rect, 2)
+
+class LoginPage:
+    def __init__(self, game):
+        self.game = game
+        self.x_offset = (self.game.SCREEN_WIDTH - 300) // 2
+        self.username_box = InputBox(self.x_offset, 240, 300, 40, game.score_font)
+        self.password_box = InputBox(self.x_offset, 320, 300, 40, game.score_font)
+        self.login_button = pygame.Rect(self.x_offset, 375, 300, 40)
+        self.login_message = ""
+
+    def draw_bg(self):
+        """Draw background"""
+        scaled_bg = pygame.transform.scale(self.game.bg_image, (self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT))
+        self.game.screen.blit(scaled_bg, (0, 0))
+
+    def render(self, events):
+        self.draw_bg()
+        text_surface = self.game.count_font.render("Login", True, self.game.WHITE)
+        text_rect = text_surface.get_rect(center=(self.game.SCREEN_WIDTH // 2, 100)) 
+        self.game.screen.blit(text_surface, text_rect)
+
+
+        for event in events:
+            self.username_box.handle_event(event)
+            self.password_box.handle_event(event)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.login_button.collidepoint(event.pos):
+                    self.send_login()
+
+        # Username box
+        username_y = 200
+        self.game.draw_text("Username:", self.game.score_font, self.game.WHITE, self.x_offset, username_y + 5)
+        self.username_box.draw(self.game.screen)
+
+        # Password box
+        password_y = 280
+        self.game.draw_text("Password:", self.game.score_font, self.game.WHITE, self.x_offset, password_y + 5)
+        self.password_box.draw(self.game.screen)
+
+        pygame.draw.rect(self.game.screen, (254, 182, 120), self.login_button)
+        text_surface = self.game.score_font.render("Masuk", True, self.game.WHITE)
+        text_rect = text_surface.get_rect(center=self.login_button.center)
+        self.game.screen.blit(text_surface, text_rect)
+
+        # Draw message if any
+        if self.login_message:
+            self.game.draw_text(self.login_message, self.game.score_font, self.game.RED, self.x_offset, 430)
+
+        pygame.display.update()
+
+    def send_login(self):
+        username = self.username_box.text.strip()
+        password = self.password_box.text.strip()
+
+        if not username or not password:
+            self.login_message = "Isi semua field!"
+            return
+
+        try:
+            data = json.dumps({
+                "username": username,
+                "password": password
+            })
+            
+            request = f"POST /login HTTP/1.1\r\n"
+            request += "Host: localhost\r\n"
+            request += "Content-Type: application/json\r\n"
+            request += f"Content-Length: {len(data)}\r\n"
+            request += "Connection: close\r\n"
+            request += "\r\n"
+            request += data
+            
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(('localhost', 8888))
+            s.sendall(request.encode())
+
+            # 🟡 Tunggu semua response
+            response = b""
+            while True:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                response += chunk
+
+            response = response.decode()
+
+            # ambil body dari HTTP response
+            response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response
+            # Parse JSON dari body
+            response_data = json.loads(response)
+
+            if response_data.get("status") == "ok":
+                self.login_message = "Login berhasil!"
+                self.game.player_id = response_data.get("player_id")
+                self.game.token = response_data.get("token")
+                self.game.current_page = "home"
+            else:
+                self.game.current_page = "login"
+                self.login_message = response_data.get("message")
+        except Exception as e:
+            self.login_message = f"Gagal koneksi: {e}"

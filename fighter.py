@@ -45,43 +45,26 @@ class Fighter():
         key = pygame.key.get_pressed()
 
         if self.attacking == False and self.alive == True and round_over == False:
-            if self.player == 1:
-                if key[pygame.K_a]:
-                    dx = -SPEED
-                    self.running = True
-                if key[pygame.K_d]:
-                    dx = SPEED
-                    self.running = True
-                if key[pygame.K_w] and self.jump == False:
-                    self.vel_y = -30
-                    self.jump = True
-            if self.player == 2:
-                if key[pygame.K_LEFT]:
-                    dx = -SPEED
-                    self.running = True
-                if key[pygame.K_RIGHT]:
-                    dx = SPEED
-                    self.running = True
-                if key[pygame.K_UP] and self.jump == False:
-                    self.vel_y = -30
-                    self.jump = True
+            if key[pygame.K_a]:
+                dx = -SPEED
+                self.running = True
+                self.flip = True  
+            if key[pygame.K_d]:
+                dx = SPEED
+                self.running = True
+                self.flip = False 
+            if key[pygame.K_w] and self.jump == False:
+                self.vel_y = -30
+                self.jump = True
 
             for event in events:
                 if event.type == pygame.KEYDOWN:
-                    if self.player == 1:
-                        if event.key == pygame.K_r:
-                            self.attack_type = 1
-                            self.attack(target)
-                        elif event.key == pygame.K_t:
-                            self.attack_type = 2
-                            self.attack(target)
-                    elif self.player == 2:
-                        if event.key == pygame.K_j:
-                            self.attack_type = 1
-                            self.attack(target)
-                        elif event.key == pygame.K_k:
-                            self.attack_type = 2
-                            self.attack(target)
+                    if event.key == pygame.K_r:
+                        self.attack_type = 1
+                        self.attack(target)
+                    elif event.key == pygame.K_t:
+                        self.attack_type = 2
+                        self.attack(target)
 
         self.vel_y += GRAVITY
         dy += self.vel_y
@@ -95,16 +78,12 @@ class Fighter():
             self.jump = False
             dy = screen_height - 110 - self.rect.bottom
 
-        if target.rect.centerx > self.rect.centerx:
-            self.flip = False
-        else:
-            self.flip = True
-
         if self.attack_cooldown > 0:
             self.attack_cooldown -= 1
 
         self.rect.x += dx
         self.rect.y += dy
+
 
     def update(self):
         if self.health <= 0:
@@ -166,7 +145,7 @@ class Fighter():
                            self.rect.y - (self.offset[1] * self.image_scale)))
 
 class RemoteFighter:
-    def __init__(self, data, sprite_sheet, image_scale, offset):
+    def __init__(self, x, y, flip, sprite_sheet, image_scale, offset):
         self.image_scale = image_scale
         self.offset = offset
         self.action = 0
@@ -174,9 +153,9 @@ class RemoteFighter:
         self.sprite_sheet = sprite_sheet
         self.image = None
         self.update_time = pygame.time.get_ticks()
-        self.rect = pygame.Rect(data.get("x", 0), data.get("y", 0), 80, 180)
-        self.health = data.get("health", 100)
-        self.flip = data.get("flip", False)
+        self.rect = pygame.Rect(x, y, 80, 180)
+        self.health = 100
+        self.flip = flip
 
     def update_data(self, data):
         self.rect.x = data.get("x", self.rect.x)
