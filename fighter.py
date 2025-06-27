@@ -2,7 +2,7 @@ import pygame
 import sys
 
 class Fighter:
-    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound):
+    def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, graunt_sound=None):
         self.player = player
         self.size = data[0]
         self.image_scale = data[1]
@@ -23,6 +23,7 @@ class Fighter:
         self.max_attack_cooldown = 50  # Cooldown maksimum untuk serangan
         self.last_attack_time = 0  # Tambahkan pelacakan waktu serangan terakhir
         self.attack_sound = sound
+        self.graunt_sound = graunt_sound
         self.hit = False
         self.health = 100
         self.alive = True
@@ -179,6 +180,8 @@ class Fighter:
     def attack(self, target):
         self.attacking = True
         self.attack_sound.play()
+        if self.graunt_sound:
+            self.graunt_sound.play()
         attacking_rect = pygame.Rect(
             self.rect.centerx - (2 * self.rect.width * self.flip),
             self.rect.y, 2 * self.rect.width, self.rect.height)

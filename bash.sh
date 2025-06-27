@@ -1,5 +1,7 @@
 
+anda tidak perlu mencantumkan komentar program yang tidak diperlukan ringkas kode d=sdemikian singkat tapi on point hindari penggunaan icon emote, Buatkan kayak quick launcher main.py yang penting untuk menjalankan program seperti ini dimana saya bisa menjalankan load balancer, server, dan player secara bersamaan. buat ui tombolnya, terserah mekanisme nya gimana
 
+yang jelas khusus untuk server itu kan server.py 8890 jika sudah ada server berjalan auto increment ke 8891 dan seterusnya
 
 
 ```bash

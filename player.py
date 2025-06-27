@@ -91,6 +91,12 @@ class GameClient:
         self.magic_fx = pygame.mixer.Sound("assets/audio/magic.wav")
         self.magic_fx.set_volume(0.75)
         
+        # Graunt sounds
+        self.warrior_graunt_fx = pygame.mixer.Sound("assets/audio/warior-graunt.wav")
+        self.warrior_graunt_fx.set_volume(0.7)
+        self.wizard_graunt_fx = pygame.mixer.Sound("assets/audio/wizard-graunt.wav")
+        self.wizard_graunt_fx.set_volume(0.7)
+        
         # Victory/Defeat sounds
         self.victory_fx = pygame.mixer.Sound("assets/audio/victory.wav")
         self.victory_fx.set_volume(0.8)
@@ -133,7 +139,7 @@ class GameClient:
             self.local_fighter = Fighter(
                 1, self.fighter_1_x, self.ground_y, False, 
                 self.WARRIOR_DATA, self.warrior_sheet, 
-                self.WARRIOR_ANIMATION_STEPS, self.sword_fx
+                self.WARRIOR_ANIMATION_STEPS, self.sword_fx, self.warrior_graunt_fx
             )
             self.remote_fighter = RemoteFighter(
                 {}, self.wizard_sheet, self.WIZARD_SCALE, self.WIZARD_OFFSET
@@ -145,7 +151,7 @@ class GameClient:
             self.local_fighter = Fighter(
                 2, self.fighter_2_x, self.ground_y, True, 
                 self.WIZARD_DATA, self.wizard_sheet, 
-                self.WIZARD_ANIMATION_STEPS, self.magic_fx
+                self.WIZARD_ANIMATION_STEPS, self.magic_fx, self.wizard_graunt_fx
             )
             self.remote_fighter = RemoteFighter(
                 {}, self.warrior_sheet, self.WARRIOR_SCALE, self.WARRIOR_OFFSET
@@ -321,8 +327,8 @@ class GameClient:
         self.screen.blit(message_surface, (message_x, message_y))
         
         # Tambahkan tombol quit
-        quit_button_width = 150  # Diperkecil dari 200
-        quit_button_height = 50  # Diperkecil dari 70
+        quit_button_width = 150
+        quit_button_height = 50
         quit_button_x = (self.SCREEN_WIDTH - quit_button_width) // 2
         quit_button_y = message_y + 100
         
