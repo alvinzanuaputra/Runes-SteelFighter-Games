@@ -44,7 +44,7 @@ test_data = {
 
 def send_request(endpoint, data):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect(('localhost', 8888))
+        s.connect(('localhost', 8891))
         request = f"POST {endpoint} HTTP/1.1\r\n"
         request += "Host: localhost\r\n"
         request += "Content-Type: application/json\r\n"
@@ -88,9 +88,9 @@ if __name__ == "__main__":
     # print(response)
 
     # Test login
-    # response = send_request('/login', test_data['login1'])
-    # print("\nLogin Response:")
-    # print(response)
+    response = send_request('/login', test_data['login1'])
+    print("\nLogin Response:")
+    print(response)
     
     # response = send_request('/login', test_data['login2'])
     # print("\nLogin Response:")
@@ -112,6 +112,6 @@ if __name__ == "__main__":
     # print(response)
     
     # Test search battle
-    response = send_request('/search_battle', test_data['search_battle1'])
-    print("\n Search Battle Response:")
-    print(response)
+    # response = send_request('/search_battle', test_data['search_battle1'])
+    # print("\n Search Battle Response:")
+    # print(response)

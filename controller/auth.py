@@ -36,7 +36,7 @@ def register(body_raw: str) -> str:
 
     return json.dumps({"status": "ok", "message": "Registrasi berhasil"})
 
-def login(body_raw: str) -> tuple[str, dict | None]:
+def login(body_raw: str) -> str | None:
     try:
         data = json.loads(body_raw)
     except json.JSONDecodeError:
@@ -67,36 +67,15 @@ def login(body_raw: str) -> tuple[str, dict | None]:
     user.token = generated_token
     session.commit()
     session.close()
-
-    session_player = {
-        "token": generated_token,
-        "player_id": user_id,
-        "username": username,
-        "state": {
-            "x": 100 if user_id % 2 == 0 else 700,
-            "y": 300,
-            "health": 100,
-            "action": 0,
-            "attack_type": 0,
-            "flip": user_id % 2 == 1
-        }
-    }
-
+    
     return json.dumps({
         "status": "ok",
         "message": "Login berhasil",
         "token": generated_token,
         "player_id": user_id
-    }), session_player
+    })
 
-def logout(body_raw: str) -> tuple[str, dict | None]:
-    try:
-        data = json.loads(body_raw)
-    except json.JSONDecodeError:
-        return json.dumps({"status": "fail", "message": "Body bukan JSON valid"})
-
-    token = data.get("token")
-
+def logout(token: str) -> str | None:
     if not token:
         return json.dumps({"status": "fail", "message": "Token tidak ditemukan dalam request"})
 
@@ -111,4 +90,4 @@ def logout(body_raw: str) -> tuple[str, dict | None]:
     session.commit()
     session.close()
 
-    return json.dumps({"status": "ok", "message": "Logout berhasil"}), token
+    return json.dumps({"status": "ok", "message": "Logout berhasil"})

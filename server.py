@@ -1,6 +1,7 @@
 import socket
 import threading
 from http import HttpServer
+import sys
 
 httpserver = HttpServer()
 
@@ -33,12 +34,13 @@ def ProcessTheClient(connection, address):
     return
 
 def main():
+    PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8889
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(("localhost", 8888))
+    server.bind(("localhost", PORT))
     server.listen(5)
 
-    print("Server started on port 8888...")
+    print(f"Server started on port {PORT}...")
 
     while True:
         conn, addr = server.accept()

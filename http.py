@@ -1,9 +1,9 @@
 from glob import glob
 from datetime import datetime
 from controller import login, logout, register, get_player_data, handle_battle, update_match, get_session, delete_session
-from controller import search_available_room, create_room, update_status_room, update_state_session, create_session
+from controller import search_available_room, create_room, create_session
 import json
-from redis_client import get_battle_state, save_battle_state
+from redis_client import get_battle_state, save_battle_state, delete_battle_state
 
 TIMEOUT = 5 * 60 	
 SCREEN_WIDTH = 1000
@@ -45,7 +45,7 @@ class HttpServer:
 
 	def proses(self,data):
 		requests = data.split("\r\n")
-		#print(requests)
+		# print(requests)
 		baris = requests[0]
 		#print(baris)
 		all_headers = [n for n in requests[1:] if n!='']
@@ -82,27 +82,47 @@ class HttpServer:
 			except Exception as e:
 				return self.response(500, 'Internal Server Error', str(e), {})
 
+		return self.response(404, 'Not Found', json.dumps({
+			"status": "fail",
+			"message": "Endpoint tidak ditemukan"
+		}), {'content-type': 'application/json'})
+
 	def http_post(self,object_address,headers, body):  
 		if (object_address == '/register'):
 			output = register(body)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':
 				return self.response(400, 'Bad Request', output, headers)
+
+			return self.response(200, 'OK', output, headers)
 		elif (object_address == '/login'):
-			output, session_player = login(body)
+			output = login(body)
 			token = json.loads(output).get('token')
+			user_id = json.loads(output).get('user_id')
 			if token:
-				create_session(token, session_player)
+				create_session(token, user_id)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':
 				return self.response(401, 'Unauthorized', output, headers)
+
+			return self.response(200, 'OK', output, headers)
 		elif (object_address == '/logout'):
-			output, token = logout(body)
-			if get_session(token) != None:
-				delete_session(token)
+			token = json.loads(body).get('token')
+
+			is_login = get_session(token)
+			if not is_login:
+				return self.response(401, 'Unauthorized', json.dumps({
+					"status": "fail",
+					"message": "Token tidak valid"
+				}), {'Content-type': 'application/json'})
+    
+			delete_session(token)
+			output = logout(token)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':
 				return self.response(401, 'Unauthorized', output, headers)
+
+			return self.response(200, 'OK', output, headers)
 		elif object_address == '/search_battle':
 			body_json = json.loads(body)
 			token = body_json.get("token")
@@ -194,7 +214,6 @@ class HttpServer:
 					"message": "Token, enemy_token, dan room_id wajib ada"
 				}), {'Content-type': 'application/json'})
 
-
 			# Ambil state pertarungan dari Redis
 			battle_state = get_battle_state(room_id)
 			if not battle_state:
@@ -240,7 +259,10 @@ class HttpServer:
 				"enemy": updated_enemy_state
 			}), {'Content-type': 'application/json'})
 
-		return self.response(200, 'OK', output, headers)
+		return self.response(404, 'Not Found', json.dumps({
+			"status": "fail",
+			"message": "Endpoint tidak ditemukan",
+		}), {'Content-type': 'application/json'})
 		
 	def http_put(self, object_address, headers, body):
 		if object_address == '/update_match':
@@ -263,11 +285,14 @@ class HttpServer:
 				}), {'content-type': 'application/json'})
 
 			output = update_match(player_id, is_win)
+			delete_battle_state(room_id)
 			return self.response(200, 'OK', output, {'content-type': 'application/json'})
+
+		return self.response(404, 'Not Found', json.dumps({
+			"status": "fail",
+			"message": "Endpoint tidak ditemukan"
+		}), {'content-type': 'application/json'})
 		
-		return self.response(501, 'Not Implemented', 'PUT method is not implemented', headers)
-
-
 if __name__=="__main__":
 	httpserver = HttpServer()
 	# d = httpserver.proses('GET /user/1 HTTP/1.0')

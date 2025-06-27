@@ -2,9 +2,6 @@ import json
 from database.database import SessionLocal
 from models.user import User
 
-
-import json
-
 def handle_battle(body: dict, player_state: dict, enemy_state: dict | None) -> tuple[str, dict, dict | None]:
     try:
         x = int(body.get("x", 0))
@@ -28,10 +25,9 @@ def handle_battle(body: dict, player_state: dict, enemy_state: dict | None) -> t
         "attack_type": attack_type,
         "flip": flip,
         "armor": armor,
-        "health": max(0, player_state.get("health", 100))  # pastikan tidak negatif
+        "health": max(0, player_state.get("health", 100))  
     })
 
-    # Jika enemy belum ada (belum masuk), return state saja
     if not enemy_state:
         return json.dumps({
             "status": "ok",
@@ -40,7 +36,6 @@ def handle_battle(body: dict, player_state: dict, enemy_state: dict | None) -> t
             "enemy": {}
         }), player_state, enemy_state
 
-    # Jika attack dilakukan dan musuh dalam jangkauan
     if attack_type in [1, 2]:
         dx = abs(player_state["x"] - enemy_state["x"])
         dy = abs(player_state["y"] - enemy_state["y"])
@@ -55,7 +50,6 @@ def handle_battle(body: dict, player_state: dict, enemy_state: dict | None) -> t
         "self": player_state,
         "enemy": enemy_state
     }), player_state, enemy_state
-
 
 def get_player_data(user_id: int) -> dict | None:
     session = SessionLocal()
@@ -86,11 +80,11 @@ def get_player_data(user_id: int) -> dict | None:
         "data": data
     })
     
-def update_match(player_id: int, is_win: bool) -> str:
+def update_match(user_id: int, is_win: bool) -> str:
     MAX_EXP = 500
     session = SessionLocal()
     
-    user = session.query(User).filter(User.id == player_id).first()
+    user = session.query(User).filter(User.id == user_id).first()
     
     if user is None:
         session.close()
