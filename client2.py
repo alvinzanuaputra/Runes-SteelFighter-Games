@@ -4,6 +4,7 @@ from pygame import mixer
 from pages.home import HomePage
 from pages.battle import BattlePage
 from pages.login import LoginPage
+from pages.register import RegisterPage
 import socket
 
 
@@ -29,6 +30,7 @@ class GameClient:
         
         self.pages = {
             "login": LoginPage(self),
+            "register": RegisterPage(self),
             "home": HomePage(self),
             "battle": BattlePage(self),
         }

@@ -8,6 +8,8 @@ class HomePage:
         self.game = game
         self.font = pygame.font.SysFont(None, 40)
         self.battle_button_rect = pygame.Rect(200, 500, 200, 50)
+        self.logout_button = pygame.Rect(200, 560, 200, 50)
+        self.logout_message = None
         self.finding_match = False
         self.match_start_time = None
         self.timeout_limit = 5 * 60 * 1000 
@@ -118,6 +120,8 @@ class HomePage:
                     self.match_start_time = pygame.time.get_ticks()
                     
                     threading.Thread(target=self.search_battle, daemon=True).start()
+                elif self.logout_button.collidepoint(event.pos):
+                    self.handle_logout()
                     
     def search_battle(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -172,6 +176,47 @@ class HomePage:
         except Exception as e:
             print(f"Error: {e}")
 
+    def handle_logout(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect(('localhost', 8888))
+        
+        request = "POST /logout HTTP/1.1\r\n"
+        request += "Host: localhost\r\n"
+        request += "Content-Type: application/json\r\n"
+        request += "Content-Length: 0\r\n"
+        request += "\r\n"
+        
+        data = {
+            "token": self.game.token
+        }
+        request += json.dumps(data)
+        
+        s.sendall(request.encode())
+        response = b""
+        while True:
+            chunk = s.recv(4096)
+            if not chunk:
+                break
+            response += chunk
+        
+        response = response.decode()
+        # ambil body dari HTTP response
+        response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response
+        # Parse JSON dari body
+        response_data = json.loads(response)
+        
+        if response_data.get("status") == "ok":
+            s.close()
+            self.game.token = None
+            self.game.player_id = None
+            self.game.room_id = None
+            self.game.p1 = None
+            self.game.enemy_token = None
+            self.game.player = None
+            self.game.current_page = "login"
+        else:
+            print("Gagal logout.")
+        
     def render(self, events):
         if self.game.player is None:
             result = self.fetch_data()
@@ -185,8 +230,14 @@ class HomePage:
 
         self.draw_bg()
         self.draw_button("Battle", self.battle_button_rect)
+        self.draw_button("Logout", self.logout_button)
         self.draw_hero()
         self.draw_stats()
+        
+        # draw logout_message if any
+        if self.logout_message:
+            logout_text = self.font.render(self.logout_message, True, (255, 100, 100))
+            self.game.screen.blit(logout_text, (200, 610))
         
         for event in events:
             self.handle_event(event)
