@@ -9,32 +9,35 @@ test_data = {
         "nickname": "Test User 2"
     }),
     "login1": json.dumps({
-        "username": "testuser",
-        "password": "testpass"
+        "username": "user1",
+        "password": "pass1"
     }),
     "login2": json.dumps({
-        "username": "testuser2",
-        "password": "testpass2"
+        "username": "user2",
+        "password": "pass2"
     }),
     "logout": json.dumps({
         "token": "2-c8f06d1ee39d4a01bc90e65d5b8419c9"
     }),
     "search_battle1": json.dumps({
-        "token": "1-d8af9f13128149af8061bb2a03e7f963",
+        "token": "1-4d99af9a56e3497cb8f0fd7b20dd69bf",
         "player_id": 1,
     }),
     "search_battle2": json.dumps({
-        "token": "2-c4ef6a8c4cb740efabac01f2b5285ca5",
+        "token": "2-46c8f73a7f7d4408aa26a3fb8a111d0c",
         "player_id": 2,
     }),
     "battle": json.dumps({
-        "room_id": "1175368f-fdb5-4d97-89f9-68aad1ad47a4",
-        "token": "2-08efc1c2f17c44c2a3137ab3029af93b",
-        "enemy_token": "1-b88c5f9b5ea44d3ba5cebdffc3c2bcc4",
+        "room_id": "249a2990-090d-476e-ad8d-61cd8029ada2",
+        "token": "2-46c8f73a7f7d4408aa26a3fb8a111d0c",
+        "enemy_token": "1-4d99af9a56e3497cb8f0fd7b20dd69bf",
         "action": 1,
         "attack_type": 2,
+        "flip": False,
+        "health": 100,
+        "armor": 1,
         "x": 650,
-        "y": 280,
+        "y": 380,
         "damage": 20
     }),
 }

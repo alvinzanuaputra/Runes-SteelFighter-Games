@@ -1,21 +1,15 @@
 from glob import glob
 from datetime import datetime
-from controller import login, logout, register, get_player_data, handle_battle, update_match
+from controller import login, logout, register, get_player_data, handle_battle, update_match, get_session, delete_session
+from controller import search_available_room, create_room, update_status_room, update_state_session, create_session
 import json
-import time
-import uuid
-from room import Room
+from redis_client import get_battle_state, save_battle_state
 
 TIMEOUT = 5 * 60 	
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 600
 
 class HttpServer:
-	def __init__(self):
-		self.sessions={}
-		self.matching = {}
-		self.rooms = {}
-  
 	def parse_headers(self, header_list):
 		headers = {}
 		for line in header_list:
@@ -98,18 +92,18 @@ class HttpServer:
 			output, session_player = login(body)
 			token = json.loads(output).get('token')
 			if token:
-				self.sessions[token] = session_player
+				create_session(token, session_player)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':
 				return self.response(401, 'Unauthorized', output, headers)
 		elif (object_address == '/logout'):
 			output, token = logout(body)
-			if token in self.sessions:
-				del self.sessions[token]
+			if get_session(token) != None:
+				delete_session(token)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':
 				return self.response(401, 'Unauthorized', output, headers)
-		elif (object_address == '/search_battle'):
+		elif object_address == '/search_battle':
 			body_json = json.loads(body)
 			token = body_json.get("token")
 			player_id = body_json.get("player_id")
@@ -120,55 +114,39 @@ class HttpServer:
 					"message": "Token dan player_id wajib ada"
 				}), {'Content-type': 'application/json'})
 
-			# Cek valid session
-			player = self.sessions.get(token)
-			if not player:
+			# Cek valid session dari database
+			current_session = get_session(token)
+			if not current_session:
 				return self.response(401, 'Unauthorized', json.dumps({
 					"status": "fail",
 					"message": "Token tidak valid"
 				}), {'Content-type': 'application/json'})
+			# Coba cari room yang available
+			joined_room = search_available_room(player_id, token)
+			# Jika tidak ada room, buat room baru dan tunggu lawan
+			if joined_room is None:
+				joined_room = create_room(player_id, token)
+				if joined_room is None:
+					return self.response(408, 'Request Timeout', json.dumps({
+						"status": "fail",
+						"message": "Tidak ada lawan ditemukan dalam 5 menit"
+					}), {'Content-type': 'application/json'})
 
-			# Cari room yang sedang menunggu
-			joined_room = None
-			for room_id, room in self.rooms.items():
-				if room.is_waiting() and not room.is_expired() and room.player1_id != player_id:
-					room.join(player_id, token)
-					joined_room = room
-					break
-
-			# Jika belum ada room, buat room baru
-			if not joined_room:
-				room_id = str(uuid.uuid4())
-				new_room = Room(room_id, player_id, token)
-				self.rooms[room_id] = new_room
-				joined_room = new_room
-
-				# Tunggu maksimal 5 menit
-				start_time = time.time()
-				while not joined_room.is_ready():
-					if joined_room.is_expired():
-						del self.rooms[room_id]
-						return self.response(408, 'Request Timeout', json.dumps({
-							"status": "fail",
-							"message": "Tidak ada lawan ditemukan dalam 5 menit"
-						}), {'Content-type': 'application/json'})
-					time.sleep(0.1)
-     
-			# Ambil token musuh
+			# Tentukan token musuh
 			enemy_token = (
 				joined_room.player1_token if joined_room.player2_token == token
 				else joined_room.player2_token
 			)
-			enemy = self.sessions.get(enemy_token)
-
-			if not enemy:
+			enemy_session = get_session(enemy_token)
+			if enemy_session is None:
 				return self.response(500, 'Server Error', json.dumps({
 					"status": "fail",
 					"message": "Lawan tidak ditemukan"
 				}), {'Content-type': 'application/json'})
 
-			# Tentukan posisi awal
+			# Atur posisi awal
 			initial_state_p1 = {
+				"token": joined_room.player1_token,
 				"x": 0.2 * SCREEN_WIDTH,
 				"y": 0.8 * SCREEN_HEIGHT,
 				"action": 0,
@@ -176,8 +154,9 @@ class HttpServer:
 				"health": 100,
 				"armor": 1
 			}
-   
+
 			initial_state_p2 = {
+				"token": joined_room.player2_token,
 				"x": 0.8 * SCREEN_WIDTH,
 				"y": 0.8 * SCREEN_HEIGHT,
 				"action": 0,
@@ -185,56 +164,81 @@ class HttpServer:
 				"health": 100,
 				"armor": 1
 			}
-
-			# Atur session untuk kedua player
-			if token == joined_room.player1_token:
-				p1_token = token
-				p2_token = enemy_token
-			else:
-				p1_token = enemy_token
-				p2_token = token
-
-			# Atur state sesuai posisi
-			self.sessions[p1_token]["state"] = initial_state_p1
-			self.sessions[p2_token]["state"] = initial_state_p2
-
-
+   
+			# Tentukan posisi berdasarkan urutan player
+			save_battle_state(joined_room.id, {
+				"state_p1": initial_state_p1,
+				"state_p2": initial_state_p2,
+				"p1_token": joined_room.player1_token, 
+				"p2_token": joined_room.player2_token 
+			})
+			
 			return self.response(200, 'OK', json.dumps({
 				"status": "ok",
 				"message": "Berhasil menemukan lawan",
-				"room_id": joined_room.room_id,
-				"self_state": self.sessions[token]["state"],
-				"enemy_state": self.sessions[enemy_token]["state"],
+				"room_id": joined_room.id, 
+				"self_state": token == joined_room.player1_token and initial_state_p1 or initial_state_p2,
+				"enemy_state": token == joined_room.player1_token and initial_state_p2 or initial_state_p1,
 				"enemy_token": enemy_token,
-    			"p1": token == joined_room.player1_token
+				"p1": (token == joined_room.player1_token)
 			}), {'Content-type': 'application/json'})
 		elif object_address == '/battle':
 			body_json = json.loads(body)
 			token = body_json.get("token")
-			player = self.sessions.get(token)
 			enemy_token = body_json.get("enemy_token")
-			enemy = self.sessions.get(enemy_token)
+			room_id = body_json.get("room_id")
 
-			if not token or not player or not enemy_token or not enemy:
+			if not token or not enemy_token or not room_id:
 				return self.response(400, 'Bad Request', json.dumps({
 					"status": "fail",
-					"message": "Token dan enemy_token wajib ada"
-			}))
-    
-			# Jalankan logika pertarungan
-			output, player_state, enemy_state = handle_battle(body_json, player, enemy)
-			self.sessions[token]["state"] = player_state
-			self.sessions[enemy_token]["state"] = enemy_state
+					"message": "Token, enemy_token, dan room_id wajib ada"
+				}), {'Content-type': 'application/json'})
 
-			headers['Content-type'] = 'application/json'
-			status_code = 200 if json.loads(output).get("status") != 'fail' else 400
-			return self.response(200, 'OK', json.dumps({
-				"status": "ok",
+
+			# Ambil state pertarungan dari Redis
+			battle_state = get_battle_state(room_id)
+			if not battle_state:
+				return self.response(404, 'Not Found', json.dumps({
+					"status": "fail",
+					"message": "Pertarungan tidak ditemukan"
+				}), {'Content-type': 'application/json'})
+
+			# Tentukan siapa pemain dan musuh berdasarkan token
+			if token == battle_state["state_p1"]["token"]:
+				player_state = battle_state["state_p1"]
+				enemy_state = battle_state["state_p2"]
+			elif token == battle_state["state_p2"]["token"]:
+				player_state = battle_state["state_p2"]
+				enemy_state = battle_state["state_p1"]
+			else:
+				return self.response(403, 'Forbidden', json.dumps({
+					"status": "fail",
+					"message": "Token tidak valid untuk room ini"
+				}), {'Content-type': 'application/json'})
+
+			output_json, updated_player_state, updated_enemy_state = handle_battle(
+				body_json, player_state, enemy_state
+			)
+
+			# Update state di Redis
+			if token == battle_state["p1_token"]:
+				battle_state["state_p1"] = updated_player_state
+				battle_state["state_p2"] = updated_enemy_state
+			else:
+				battle_state["state_p2"] = updated_player_state
+				battle_state["state_p1"] = updated_enemy_state
+
+			save_battle_state(room_id, battle_state)
+
+			status = json.loads(output_json).get("status")
+			response_code = 200 if status != "fail" else 400
+
+			return self.response(response_code, 'OK', json.dumps({
+				"status": "ok" if status != "fail" else "fail",
 				"message": "Battle updated",
-				"self": self.sessions[token]["state"],
-				"enemy": self.sessions[enemy_token]["state"]
-			}), headers)
-
+				"self": updated_player_state,
+				"enemy": updated_enemy_state
+			}), {'Content-type': 'application/json'})
 
 		return self.response(200, 'OK', output, headers)
 		
@@ -246,7 +250,6 @@ class HttpServer:
 				player_id = int(body_json.get("player_id"))
 				room_id = body_json.get("room_id")
 				is_win = body_json.get("is_win", False)
-				enemy_token = body_json.get("enemy_token")
 			except (ValueError, TypeError, json.JSONDecodeError):
 				return self.response(400, 'Bad Request', json.dumps({
 					"status": "fail",
@@ -259,10 +262,6 @@ class HttpServer:
 					"message": "Token, player_id, dan room_id wajib ada"
 				}), {'content-type': 'application/json'})
 
-			room = self.rooms.get(room_id)
-			if room:
-				del self.rooms[room_id]
-
 			output = update_match(player_id, is_win)
 			return self.response(200, 'OK', output, {'content-type': 'application/json'})
 		
@@ -271,8 +270,8 @@ class HttpServer:
 
 if __name__=="__main__":
 	httpserver = HttpServer()
-	d = httpserver.proses('GET /user/1 HTTP/1.0')
-	print(d)
+	# d = httpserver.proses('GET /user/1 HTTP/1.0')
+	# print(d)
 	# d = httpserver.proses('GET donalbebek.jpg HTTP/1.0')
 	# print(d)
 	#d = httpserver.http_get('testing2.txt',{})
@@ -281,9 +280,9 @@ if __name__=="__main__":
 	# print(d)
 
 	# data_register = {
-	# 	"username": "testuser",
-	# 	"password": "testpass",
-	# 	"nickname": "Test User"
+	# 	"username": "user2",
+	# 	"password": "pass2",
+	# 	"nickname": "User2"
 	# }
  
 	# body_raw = json.dumps(data_register)
@@ -298,3 +297,12 @@ if __name__=="__main__":
 	# body_raw = json.dumps(data_login)
 	# d = httpserver.http_post('/login', {}, body_raw)
 	# print(d)
+ 
+	# data_logout = {
+	# 	"token": "1-c1431ca564bb40b5809e7ea453aaa219"
+	# }
+ 
+	# body_raw = json.dumps(data_logout)
+	# d = httpserver.http_post('/logout', {}, body_raw)
+	# print(d)
+ 
