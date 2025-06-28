@@ -1,5 +1,9 @@
-**/__pycache__/
-debug.py
-dumb.rdb
+# Ignore Python cache
+__pycache__/
+*.pyc
 
-/__pycache__/
+# Ignore Redis dump file
+dump.rdb
+
+# Ignore debug file
+debug.py
