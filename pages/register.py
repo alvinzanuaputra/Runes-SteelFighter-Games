@@ -136,7 +136,7 @@ class RegisterPage:
 
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(('localhost', 8888))
-            s.sendall(request.encode())
+            s.sendall(request.encode('utf-8'))
 
             response = b""
             while True:
@@ -145,7 +145,7 @@ class RegisterPage:
                     break
                 response += chunk
 
-            response = response.decode()
+            response = response.decode('utf-8')
             response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response
             response_data = json.loads(response)
 

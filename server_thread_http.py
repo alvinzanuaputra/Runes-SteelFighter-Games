@@ -12,7 +12,7 @@ def ProcessTheClient(connection, address):
             data = connection.recv(1024)
             if data:
                 # Konversi dari bytes ke string agar bisa deteksi \r\n
-                d = data.decode()
+                d = data.decode('utf-8')
                 rcv += d
 
                 # Akhiran HTTP selalu kosong setelah \r\n\r\n (end of headers + body)

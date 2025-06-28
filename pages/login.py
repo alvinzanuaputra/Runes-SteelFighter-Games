@@ -165,7 +165,7 @@ class LoginPage:
             
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(('localhost', 8888))
-            s.sendall(request.encode())
+            s.sendall(request.encode('utf-8'))
 
             # 🟡 Tunggu semua response
             response = b""
@@ -175,7 +175,7 @@ class LoginPage:
                     break
                 response += chunk
 
-            response = response.decode()
+            response = response.decode('utf-8')
 
             # ambil body dari HTTP response
             response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response

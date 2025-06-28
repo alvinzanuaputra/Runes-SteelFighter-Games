@@ -184,7 +184,7 @@ class BattlePage:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(('localhost', 8888))
-            s.sendall(request.encode())
+            s.sendall(request.encode('utf-8'))
 
             # Terima semua data sampai server tutup koneksi
             response = b""
@@ -194,7 +194,7 @@ class BattlePage:
                     break
                 response += chunk
 
-            received = response.decode()
+            received = response.decode('utf-8')
 
             if received:
                 headers, _, body = received.partition("\r\n\r\n")
@@ -366,7 +366,7 @@ class BattlePage:
                     request += "\r\n"
                     request += data
 
-                    s.sendall(request.encode())
+                    s.sendall(request.encode('utf-8'))
                     response = b""
                     while True:
                         chunk = s.recv(4096)
@@ -374,7 +374,7 @@ class BattlePage:
                             break
                         response += chunk
                         
-                    response = response.decode()
+                    response = response.decode('utf-8')
                     self.has_updated_data = True
                     s.close()
                 except Exception as e:

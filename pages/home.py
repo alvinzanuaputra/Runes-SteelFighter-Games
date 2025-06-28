@@ -97,7 +97,7 @@ class HomePage:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(('localhost', 8888))
             print(f"Mengirim permintaan: {request}")
-            s.sendall(request.encode())
+            s.sendall(request.encode('utf-8'))
             response = b""
             while True:
                 chunk = s.recv(4096)
@@ -106,7 +106,7 @@ class HomePage:
                 response += chunk
 
             # Decode response
-            decoded = response.decode()
+            decoded = response.decode('utf-8')
 
             headers, _, body = decoded.partition("\r\n\r\n")
             print(f"Response Headers:\n{headers}\n")
@@ -254,7 +254,7 @@ class HomePage:
         }
         request += json.dumps(data)
         
-        s.sendall(request.encode())
+        s.sendall(request.encode('utf-8'))
         try:
             response = b""
             while True:
@@ -263,7 +263,7 @@ class HomePage:
                     break
                 response += chunk
 
-            response = response.decode()
+            response = response.decode('utf-8')
             # ambil body dari HTTP response
             response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response
             # Parse JSON dari body
@@ -302,7 +302,7 @@ class HomePage:
         }
         request += json.dumps(data)
         
-        s.sendall(request.encode())
+        s.sendall(request.encode('utf-8'))
         response = b""
         while True:
             chunk = s.recv(4096)
@@ -310,7 +310,7 @@ class HomePage:
                 break
             response += chunk
         
-        response = response.decode()
+        response = response.decode('utf-8')
         # ambil body dari HTTP response
         response = response.split("\r\n\r\n", 1)[1] if "\r\n\r\n" in response else response
         # Parse JSON dari body

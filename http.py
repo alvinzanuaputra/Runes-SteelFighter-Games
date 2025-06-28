@@ -37,9 +37,9 @@ class HttpServer:
 		#response harus berupa bytes
 		#message body harus diubah dulu menjadi bytes
 		if (type(messagebody) is not bytes):
-			messagebody = messagebody.encode()
+			messagebody = messagebody.encode('utf-8')
 
-		response = response_headers.encode() + messagebody
+		response = response_headers.encode('utf-8') + messagebody
 		#response adalah bytes
 		return response
 
