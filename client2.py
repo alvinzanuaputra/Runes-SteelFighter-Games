@@ -47,8 +47,8 @@ class GameClient:
         """Initialize display settings"""
         self.WINDOW_WIDTH = 1280
         self.WINDOW_HEIGHT = 720
-        self.FULLSCREEN_WIDTH = self.info.current_w
-        self.FULLSCREEN_HEIGHT = self.info.current_h
+        self.FULLSCREEN_WIDTH = pygame.display.Info().current_w
+        self.FULLSCREEN_HEIGHT = pygame.display.Info().current_h
         
         self.is_fullscreen = False
         self.SCREEN_WIDTH = self.WINDOW_WIDTH
@@ -104,9 +104,9 @@ class GameClient:
         
         # Victory/Defeat sounds
         self.victory_fx = pygame.mixer.Sound("assets/audio/victory.wav")
-        self.victory_fx.set_volume(0.5)
+        self.victory_fx.set_volume(0.6)
         self.defeat_fx = pygame.mixer.Sound("assets/audio/defeat.wav")
-        self.defeat_fx.set_volume(0.5)
+        self.defeat_fx.set_volume(0.3)
         
         # Images
         try:
@@ -126,6 +126,31 @@ class GameClient:
             self.count_font = pygame.font.SysFont("Arial", 80)
             self.score_font = pygame.font.SysFont("Arial", 30)
      
+    def handle_screen_resize(self, new_width, new_height):
+        """Handle screen resize and reposition game elements"""
+        self.SCREEN_WIDTH = new_width
+        self.SCREEN_HEIGHT = new_height
+        
+        # Update screen surface
+        if self.is_fullscreen:
+            self.screen = pygame.display.set_mode((self.FULLSCREEN_WIDTH, self.FULLSCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        else:
+            self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        
+        # Recalculate positions for pages
+        for page in self.pages.values():
+            if hasattr(page, '_calculate_fighter_positions'):
+                page._calculate_fighter_positions()
+        
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        self.is_fullscreen = not self.is_fullscreen
+        
+        if self.is_fullscreen:
+            self.handle_screen_resize(self.FULLSCREEN_WIDTH, self.FULLSCREEN_HEIGHT)
+        else:
+            self.handle_screen_resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+        
     def handle_events(self):
         events = pygame.event.get()
         for event in events:
@@ -134,6 +159,18 @@ class GameClient:
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.run = False
+                elif event.key == pygame.K_F11:
+                    self.toggle_fullscreen()
+                elif event.key == pygame.K_RETURN and (
+                    pygame.key.get_pressed()[pygame.K_LALT] or 
+                    pygame.key.get_pressed()[pygame.K_RALT]
+                ):
+                    self.toggle_fullscreen()
+            elif event.type == pygame.VIDEORESIZE:
+                if not self.is_fullscreen:
+                    self.handle_screen_resize(event.w, event.h)
+            elif event.type == pygame.VIDEOEXPOSE:
+                pygame.display.flip()
         return events
       
     def draw_text(self, text, font, color, x, y):

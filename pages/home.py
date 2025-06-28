@@ -13,9 +13,29 @@ class HomePage:
         self.finding_match = False
         self.match_start_time = None
         self.timeout_limit = 5 * 60 * 1000 
-           
+        self.is_fullscreen = False
+        self.hero_frame_index = 0
+        self.hero_animation_timer = 0
+        self.hero_animation_cooldown = 100  # Percepat animasi
+        self.hero_animation_type = 'warrior' if game.p1 else 'wizard'
+        
+        # Muat sprite idle
+        self.warrior_idle_sheet = pygame.image.load("assets/images/warrior/Sprites/Idle.png").convert_alpha()
+        self.wizard_idle_sheet = pygame.image.load("assets/images/wizard/Sprites/Idle.png").convert_alpha()
+        
+        # Tentukan jumlah frame idle
+        self.warrior_idle_frames = 10  # Sesuaikan dengan jumlah frame di Idle.png warrior
+        self.wizard_idle_frames = 8   # Sesuaikan dengan jumlah frame di Idle.png wizard
+
+        # Inisialisasi font Turok
+        try:
+            self.hero_font = pygame.font.Font("assets/fonts/turok.ttf", 48)  # Perbesar ukuran font
+            print("Font Turok berhasil dimuat")
+        except FileNotFoundError:
+            print("Font Turok tidak ditemukan, menggunakan font default")
+            self.hero_font = pygame.font.SysFont(None, 48)
+
     def draw_bg(self):
-        """Draw background"""
         scaled_bg = pygame.transform.scale(self.game.bg_image, (self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT))
         self.game.screen.blit(scaled_bg, (0, 0))
         
@@ -28,27 +48,21 @@ class HomePage:
     def draw_stats(self):
         # Load gambar border
         border = pygame.image.load("assets/images/background/border_stats.png").convert_alpha()
-        
-        # Ambil ukuran asli
         original_width, original_height = border.get_size()
-
-        # Hitung ukuran baru (90%)
-        scale_factor = 0.9
+        scale_factor = 0.66
         new_width = int(original_width * scale_factor)
         new_height = int(original_height * scale_factor)
-
-        # Skala ulang gambar border
         border = pygame.transform.scale(border, (new_width, new_height))
 
         # Posisi border (misalnya tengah layar)
-        border_x = (self.game.screen.get_width() - new_width) // 2 + 200
+        border_x = (self.game.screen.get_width() - new_width) // 2 + 180
         border_y = 100  # bisa disesuaikan
 
         # Tampilkan border
         self.game.screen.blit(border, (border_x, border_y))
 
         # Padding teks di dalam border
-        padding_x = 40
+        padding_x = 80
         padding_y = 100
         line_spacing = 40
 
@@ -101,16 +115,113 @@ class HomePage:
             self.login_message = f"Gagal koneksi: {e}"
     
     def draw_hero(self):
-        """Draw cropped hero sprite from warrior_sheet"""
-        # draw hero sprite
-        self.warrior_background = pygame.image.load("assets/images/warrior/Sprites/warrior_backgorund.png").convert_alpha()
-        self.game.screen.blit(self.warrior_background, (150, 80))
+        """Draw animated hero sprite from warrior or wizard idle sheet"""
+        # Pilih sheet dan data berdasarkan tipe hero
+        if self.hero_animation_type == 'warrior':
+            hero_sheet = self.warrior_idle_sheet
+            hero_animation_steps = self.warrior_idle_frames
+            hero_scale = self.game.WARRIOR_SCALE * 1.5  # Perbesar sedikit
+            hero_offset = self.game.WARRIOR_OFFSET
+            hero_name = "Warrior"
+            
+            # Posisi khusus untuk warrior
+            x_offset = -100  # Sesuaikan horizontal
+            y_offset = -80   # Sesuaikan vertikal
+        else:
+            hero_sheet = self.wizard_idle_sheet
+            hero_animation_steps = self.wizard_idle_frames
+            hero_scale = self.game.WIZARD_SCALE * 1.6  # Perbesar sedikit
+            hero_offset = self.game.WIZARD_OFFSET
+            hero_name = "Wizard"
+            
+            # Posisi khusus untuk wizard
+            x_offset = -170  # Sesuaikan horizontal
+            y_offset = -220  # Sesuaikan vertikal
+
+        # Hitung ukuran sprite
+        sprite_width = hero_sheet.get_width() // hero_animation_steps
+        sprite_height = hero_sheet.get_height()
+
+        # Perbarui frame animasi
+        current_time = pygame.time.get_ticks()
+        if current_time - self.hero_animation_timer > self.hero_animation_cooldown:
+            self.hero_frame_index = (self.hero_frame_index + 1) % hero_animation_steps
+            self.hero_animation_timer = current_time
+
+        # Ambil frame saat ini
+        frame_x = self.hero_frame_index * sprite_width
+        frame_rect = pygame.Rect(frame_x, 0, sprite_width, sprite_height)
+        frame = hero_sheet.subsurface(frame_rect)
+
+        # Scale frame
+        scaled_width = int(sprite_width * hero_scale)
+        scaled_height = int(sprite_height * hero_scale)
+        scaled_frame = pygame.transform.scale(frame, (scaled_width, scaled_height))
+
+        # Posisikan frame - geser ke kiri
+        x = x_offset - hero_offset[0]
+        y = y_offset - hero_offset[1]
+        self.game.screen.blit(scaled_frame, (x, y))
+
+        # Render teks nama karakter
+        hero_text = self.hero_font.render(hero_name, True, (255, 255, 255))  # Warna putih
         
+        # Posisikan teks di tengah atas sprite
+        text_x = 240
+        text_y = 120
+        # Gambar teks
+        self.game.screen.blit(hero_text, (text_x, text_y))
+
+    def handle_screen_resize(self, new_width, new_height):
+        """Handle screen resize and reposition game elements"""
+        self.game.SCREEN_WIDTH = new_width
+        self.game.SCREEN_HEIGHT = new_height
+        
+        # Update screen surface
+        if hasattr(self, 'is_fullscreen') and self.is_fullscreen:
+            self.game.screen = pygame.display.set_mode((self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        else:
+            self.game.screen = pygame.display.set_mode((self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT), pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        self.is_fullscreen = not self.is_fullscreen
+        
+        if self.is_fullscreen:
+            self.handle_screen_resize(self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT)
+        else:
+            self.handle_screen_resize(self.game.WINDOW_WIDTH, self.game.WINDOW_HEIGHT)
+        
+    def toggle_hero(self, direction='next'):
+        """Toggle between warrior and wizard hero"""
+        if direction == 'next':
+            self.hero_animation_type = 'wizard' if self.hero_animation_type == 'warrior' else 'warrior'
+        elif direction == 'prev':
+            self.hero_animation_type = 'warrior' if self.hero_animation_type == 'wizard' else 'wizard'
+        
+        # Reset animasi
+        self.hero_frame_index = 0
+        self.hero_animation_timer = 0
+
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_b:
                 print("Masuk ke Battle Page")
                 self.game.switch_to("battle")
+            elif event.key == pygame.K_LEFT:  # Tombol panah kiri untuk ganti karakter
+                self.toggle_hero('prev')
+            elif event.key == pygame.K_RIGHT:  # Tombol panah kanan untuk ganti karakter
+                self.toggle_hero('next')
+            elif event.key == pygame.K_F11:
+                self.toggle_fullscreen()
+            elif event.key == pygame.K_RETURN and (
+                pygame.key.get_pressed()[pygame.K_LALT] or 
+                pygame.key.get_pressed()[pygame.K_RALT]
+            ):
+                self.toggle_fullscreen()
+        elif event.type == pygame.VIDEORESIZE:
+            if not hasattr(self, 'is_fullscreen') or not self.is_fullscreen:
+                self.handle_screen_resize(event.w, event.h)
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: 
                 if self.battle_button_rect.collidepoint(event.pos):
@@ -239,6 +350,11 @@ class HomePage:
         if self.logout_message:
             logout_text = self.font.render(self.logout_message, True, (255, 100, 100))
             self.game.screen.blit(logout_text, (200, 610))
+        
+        # Tambahkan petunjuk untuk mengganti hero
+        hint_font = pygame.font.SysFont(None, 25)
+        hint_text = hint_font.render("Left/right arrows to see hero list", True, self.game.WHITE)
+        self.game.screen.blit(hint_text, (10, self.game.SCREEN_HEIGHT - 40))
         
         for event in events:
             self.handle_event(event)

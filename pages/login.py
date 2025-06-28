@@ -52,7 +52,37 @@ class LoginPage:
         self.login_button = pygame.Rect(self.x_offset, 375, 300, 40)
         self.register_button = pygame.Rect(self.x_offset, 420, 300, 40)
         self.login_message = ""
+        self.is_fullscreen = False
 
+    def handle_screen_resize(self, new_width, new_height):
+        """Handle screen resize and reposition game elements"""
+        self.game.SCREEN_WIDTH = new_width
+        self.game.SCREEN_HEIGHT = new_height
+        
+        # Update screen surface
+        if hasattr(self, 'is_fullscreen') and self.is_fullscreen:
+            self.game.screen = pygame.display.set_mode((self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        else:
+            self.game.screen = pygame.display.set_mode((self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT), pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF)
+        
+        # Recalculate x_offset
+        self.x_offset = (self.game.SCREEN_WIDTH - 300) // 2
+        
+        # Update input box positions
+        self.username_box.rect.x = self.x_offset
+        self.password_box.rect.x = self.x_offset
+        self.login_button.x = self.x_offset
+        self.register_button.x = self.x_offset
+        
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        self.is_fullscreen = not self.is_fullscreen
+        
+        if self.is_fullscreen:
+            self.handle_screen_resize(self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT)
+        else:
+            self.handle_screen_resize(self.game.WINDOW_WIDTH, self.game.WINDOW_HEIGHT)
+        
     def draw_bg(self):
         """Draw background"""
         scaled_bg = pygame.transform.scale(self.game.bg_image, (self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT))
@@ -64,8 +94,19 @@ class LoginPage:
         text_rect = text_surface.get_rect(center=(self.game.SCREEN_WIDTH // 2, 100)) 
         self.game.screen.blit(text_surface, text_rect)
 
-
         for event in events:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F11:
+                    self.toggle_fullscreen()
+                elif event.key == pygame.K_RETURN and (
+                    pygame.key.get_pressed()[pygame.K_LALT] or 
+                    pygame.key.get_pressed()[pygame.K_RALT]
+                ):
+                    self.toggle_fullscreen()
+            elif event.type == pygame.VIDEORESIZE:
+                if not hasattr(self, 'is_fullscreen') or not self.is_fullscreen:
+                    self.handle_screen_resize(event.w, event.h)
+            
             self.username_box.handle_event(event)
             self.password_box.handle_event(event)
             if event.type == pygame.MOUSEBUTTONDOWN:

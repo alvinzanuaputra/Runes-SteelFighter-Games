@@ -94,29 +94,30 @@ class BattlePage:
         self.game.SCREEN_HEIGHT = new_height
         
         # Update screen surface
-        if self.is_fullscreen:
-            self.game.screen = pygame.display.set_mode((self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT), pygame.FULLSCREEN)
+        if hasattr(self, 'is_fullscreen') and self.is_fullscreen:
+            self.game.screen = pygame.display.set_mode((self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
         else:
-            self.game.screen = pygame.display.set_mode((self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT), pygame.RESIZABLE)
+            self.game.screen = pygame.display.set_mode((self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT), pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF)
         
         # Recalculate fighter positions
         self._calculate_fighter_positions()
         
         # Reposition local fighter
-        if self.game.p1 == 0:
-            self.local_fighter.rect.x = self.fighter_1_x
-        else:
-            self.local_fighter.rect.x = self.fighter_2_x
-        self.local_fighter.rect.y = self.ground_y
+        if hasattr(self, 'local_fighter'):
+            if self.game.p1:
+                self.local_fighter.rect.x = self.fighter_1_x
+            else:
+                self.local_fighter.rect.x = self.fighter_2_x
+            self.local_fighter.rect.y = self.ground_y
         
     def toggle_fullscreen(self):
         """Toggle between fullscreen and windowed mode"""
         self.is_fullscreen = not self.is_fullscreen
         
         if self.is_fullscreen:
-            self.handle_screen_resize(self.FULLSCREEN_WIDTH, self.FULLSCREEN_HEIGHT)
+            self.handle_screen_resize(self.game.FULLSCREEN_WIDTH, self.game.FULLSCREEN_HEIGHT)
         else:
-            self.handle_screen_resize(self.WINDOW_WIDTH, self.WINDOW_HEIGHT)
+            self.handle_screen_resize(self.game.WINDOW_WIDTH, self.game.WINDOW_HEIGHT)
             
     def handle_events(self):
         """Handle pygame events"""
@@ -135,7 +136,7 @@ class BattlePage:
                 ):
                     self.toggle_fullscreen()
             elif event.type == pygame.VIDEORESIZE:
-                if not self.is_fullscreen:
+                if not hasattr(self, 'is_fullscreen') or not self.is_fullscreen:
                     self.handle_screen_resize(event.w, event.h)
             elif event.type == pygame.VIDEOEXPOSE:
                 pygame.display.flip()
@@ -167,7 +168,7 @@ class BattlePage:
             "flip": self.local_fighter.flip,
             "attack_type": self.local_fighter.attack_type,
             "armor": 1 * self.game.player.get("level", 1),
-            "damage": 5 * (1 + 0.2 * (self.game.player.get("level", 1) - 1)),
+            "damage": 10 * self.game.player.get("level", 1),
             "token": self.game.token,
             "enemy_token": self.game.enemy_token,
             "room_id": self.game.room_id,

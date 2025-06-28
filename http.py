@@ -283,12 +283,6 @@ class HttpServer:
 					"status": "fail",
 					"message": "Token, player_id, dan room_id wajib ada"
 				}), {'content-type': 'application/json'})
-			
-			if get_session(token) is None:
-				return self.response(403, 'Forbidden', json.dumps({
-					"status": "fail",
-					"message": "Token tidak valid"
-				}), {'content-type': 'application/json'})
 
 			output = update_match(player_id, is_win)
 			delete_battle_state(room_id)
@@ -335,5 +329,4 @@ if __name__=="__main__":
  
 	# body_raw = json.dumps(data_logout)
 	# d = httpserver.http_post('/logout', {}, body_raw)
-	# print(d)
- 
+	# print(d)py

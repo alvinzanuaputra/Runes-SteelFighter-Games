@@ -23,11 +23,9 @@ class Fighter():
         self.hit = False
         self.health = 100
         self.alive = True
-        
-        # Cooldown dan parameter animasi
-        self.ATTACK_COOLDOWN = 500  # Cooldown dalam milidetik
+        self.ATTACK_COOLDOWN = 500
         self.last_attack_time = 0
-        self.attack_animation_duration = 350  # Durasi animasi serangan dalam milidetik
+        self.attack_animation_duration = 350
         self.attack_animation_started = 0
 
     def load_images(self, sprite_sheet, animation_steps):
@@ -50,12 +48,9 @@ class Fighter():
 
         key = pygame.key.get_pressed()
         current_time = pygame.time.get_ticks()
-
-        # Hentikan serangan jika animasi sudah selesai
         if self.attacking and current_time - self.attack_animation_started > self.attack_animation_duration:
             self.attacking = False
             self.attack_type = 0
-
         if not self.attacking and self.alive and not round_over:
             if key[pygame.K_a]:
                 dx = -SPEED
@@ -87,7 +82,6 @@ class Fighter():
 
         self.vel_y += GRAVITY
         dy += self.vel_y
-
         if self.rect.left + dx < 0:
             dx = -self.rect.left
         if self.rect.right + dx > screen_width:
@@ -96,7 +90,6 @@ class Fighter():
             self.vel_y = 0
             self.jump = False
             dy = screen_height - 110 - self.rect.bottom
-
         self.rect.x += dx
         self.rect.y += dy
 
