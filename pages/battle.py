@@ -408,6 +408,13 @@ class BattlePage:
                 self.game.SCREEN_WIDTH - health_bar_width - margin, 60
             )       
             
+        # Tambahkan hint kontrol
+        hint_font = pygame.font.SysFont(None, 25)
+        hint_text_move = hint_font.render("Move: A/D/W | Attack: K/L", True, self.game.WHITE)
+        hint_x = 10
+        hint_y = self.game.SCREEN_HEIGHT - 40
+        self.game.screen.blit(hint_text_move, (hint_x, hint_y))
+            
     def update_fighters(self):
         """Update fighter states"""
         self.local_fighter.update()
