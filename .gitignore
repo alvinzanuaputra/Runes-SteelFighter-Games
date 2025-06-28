@@ -2,4 +2,4 @@
 debug.py
 dumb.rdb
 
-__pycache__
+/__pycache__/
