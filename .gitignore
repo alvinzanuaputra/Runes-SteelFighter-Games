@@ -1,0 +1,9 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore Redis dump file
+dump.rdb
+
+# Ignore debug file
+debug.py
