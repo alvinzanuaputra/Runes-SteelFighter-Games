@@ -395,6 +395,7 @@ Game ini dikembangkan sebagai tugas akhir mata kuliah Pemrograman Jaringan denga
 
 ## 📋 Dokumentasi Video
 
+https://github.com/user-attachments/assets/3fd8264a-6e47-445a-a202-179a0fc31e29
 
 
 ## 📋 Dokumentasi Gambar
