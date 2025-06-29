@@ -92,8 +92,9 @@ def update_match(user_id: int, is_win: bool) -> str:
 
     jumlah_menang = user.winrate * user.jumlah_match // 100
     user.jumlah_match += 1
-    user.winrate = ((jumlah_menang + 1) * 100) // user.jumlah_match
+
     if is_win:
+        jumlah_menang += 1
         user.exp += 100
         if user.exp >= MAX_EXP:
             user.level += 1
@@ -102,7 +103,8 @@ def update_match(user_id: int, is_win: bool) -> str:
             user.attack += 5
             user.armor += 1
 
-    # Simpan perubahan ke database
+    user.winrate = (jumlah_menang * 100) // user.jumlah_match
+
     session.commit()
     session.close()
 
@@ -110,4 +112,5 @@ def update_match(user_id: int, is_win: bool) -> str:
         "status": "ok",
         "message": "Match updated successfully",
     })
+
     
