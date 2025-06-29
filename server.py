@@ -14,7 +14,6 @@ def ProcessTheClient(connection, address):
                 # Konversi dari bytes ke string agar bisa deteksi \r\n
                 d = data.decode()
                 rcv += d
-
                 # Akhiran HTTP selalu kosong setelah \r\n\r\n (end of headers + body)
                 if "\r\n\r\n" in rcv:
                     # Proses request lengkap
@@ -29,7 +28,6 @@ def ProcessTheClient(connection, address):
                 break
         except OSError as e:
             break
-
     connection.close()
     return
 
@@ -39,9 +37,7 @@ def main():
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(("localhost", PORT))
     server.listen(5)
-
     print(f"Server started on port {PORT}...")
-
     while True:
         conn, addr = server.accept()
         print(f"Accepted connection from {addr}")

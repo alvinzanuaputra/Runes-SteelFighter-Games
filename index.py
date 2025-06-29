@@ -10,10 +10,7 @@ class QuickLauncher:
     def __init__(self, root):
         self.root = root
         self.root.title("Runes Steelfighter - Game Launcher")
-        # Set to fullscreen and make resizable
-        self.root.state('zoomed')  # Windows fullscreen
-        # Alternative for cross-platform fullscreen
-        # self.root.attributes('-fullscreen', True)
+        self.root.state('zoomed')
         self.root.resizable(True, True)
         self.root.configure(bg='#1a1a2e')
         self.processes = []
@@ -58,7 +55,6 @@ class QuickLauncher:
         ttk.Label(main_frame, text="RUNES STEELFIGHTER", style='Title.TLabel').pack()
         ttk.Label(main_frame, text="Game Server Management System", style='Subtitle.TLabel').pack(pady=(0, 20))
         
-        # Control frame with more buttons
         control_frame = ttk.Frame(main_frame, style='Card.TFrame', padding=15)
         control_frame.pack(fill="x", pady=10)
         
@@ -74,7 +70,6 @@ class QuickLauncher:
             ("Clear Logs", 'Action.TButton', self.clear_log),
         ]
         
-        # Arrange buttons in grid
         for i, (text, style, cmd) in enumerate(btn_configs):
             row = i // 3
             col = i % 3
@@ -82,7 +77,6 @@ class QuickLauncher:
                 row=row, column=col, padx=5, pady=5, sticky="ew"
             )
         
-        # Configure grid weights for equal column widths
         for col in range(3):
             control_frame.grid_columnconfigure(col, weight=1)
 
@@ -134,17 +128,13 @@ class QuickLauncher:
             return None
 
     def check_database(self):
-        """Check database connection"""
         self.log("🔍 Memeriksa koneksi database...", 'info')
-        # Untuk pemeriksaan database, kita hanya akan menampilkan status sukses atau gagal
         process = self._start_process('database/database.py', 'Database Check', 
                                       args=['check'], show_errors=False)
         
-        # Tunggu proses selesai
         if process:
             process.wait()
             
-            # Periksa output untuk mendeteksi keberhasilan
             stdout_data = process.stdout.read()
             if '✅ Koneksi ke database berhasil' in stdout_data:
                 self.log("✅ Koneksi database berhasil", 'success')
@@ -152,14 +142,12 @@ class QuickLauncher:
                 self.log("❌ Koneksi database gagal", 'error')
 
     def start_redis_server(self):
-        """Start Redis server in background"""
         if self.redis_started:
             self.log("⚠️ Redis server is already running", 'warning')
             return
         
         self.log("🔧 Starting Redis server...", 'info')
         try:
-            # Try to start redis-server
             process = subprocess.Popen(['redis-server'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                      creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             self.processes.append(('Redis Server', process))
@@ -170,7 +158,6 @@ class QuickLauncher:
             self.log(f"❌ Failed to start Redis server: {e}", 'error')
 
     def start_redis_client(self):
-        """Start Redis client"""
         if not self.redis_started:
             self.log("⚠️ Please start Redis server first", 'warning')
             return
@@ -178,12 +165,10 @@ class QuickLauncher:
         self._start_process('redis_client.py', 'Redis Client', show_errors=True)
 
     def start_load_balancer(self):
-        """Start load balancer"""
         self.log("⚖️ Starting load balancer...", 'info')
         self._start_process('load_balancer.py', 'Load Balancer', show_errors=True)
 
     def start_server(self, port=None):
-        """Start server with specific port"""
         if port is None:
             port = self.next_port
             while not self.is_port_available(port):
@@ -203,41 +188,33 @@ class QuickLauncher:
         self._start_process('server.py', f'Server:{port}', [str(port)], show_errors=True)
 
     def start_client(self):
-        """Start client (client2.py)"""
         client_number = len([name for name, _ in self.processes if 'Client' in name]) + 1
         self.log(f"👤 Starting client #{client_number}...", 'info')
         self._start_process('client2.py', f'Client-{client_number}', show_errors=True)
 
     def monitor_process(self, name, process, show_errors=True):
         try:
-            # Capture both stdout and stderr
             stdout_lines = []
             stderr_lines = []
             has_success_message = False
             
-            # Read stdout
             for output in iter(process.stdout.readline, ''):
                 clean_output = output.strip()
                 if clean_output and 'pygame' not in clean_output.lower():
                     stdout_lines.append(clean_output)
-                    # Check for success indicators
                     if ('✅' in clean_output or 'berhasil' in clean_output.lower() or 
                         'success' in clean_output.lower() or 'connected' in clean_output.lower()):
                         has_success_message = True
                         self.log(f"✅ [{name}] {clean_output}", 'success')
-                    # Check for error indicators  
                     elif ('❌' in clean_output or 'error' in clean_output.lower() or 
                           'failed' in clean_output.lower() or 'gagal' in clean_output.lower()):
                         self.log(f"❌ [{name}] {clean_output}", 'error')
-                    # Check for warning indicators
                     elif ('⚠️' in clean_output or 'warning' in clean_output.lower() or 
                           'peringatan' in clean_output.lower()):
                         self.log(f"⚠️ [{name}] {clean_output}", 'warning')
-                    # Regular info logs (filter out sqlalchemy noise)
                     elif not any(x in clean_output.lower() for x in ['sqlalchemy', 'info sqlalchemy', '[raw sql]', 'generated in', 'begin (implicit)', 'rollback']):
                         self.log(f"📝 [{name}] {clean_output}", 'info')
             
-            # Wait for process to complete and get stderr
             process.wait()
             stderr_output = process.stderr.read()
             
@@ -245,11 +222,9 @@ class QuickLauncher:
                 stderr_lines = stderr_output.strip().split('\n')
                 for error_line in stderr_lines:
                     if error_line.strip() and show_errors:
-                        # Filter out common non-error messages
                         if not any(x in error_line.lower() for x in ['info', 'debug', 'warning']):
                             self.log(f"🚨 [{name}] ERROR: {error_line}", 'error')
             
-            # Special handling for different process types
             if name == 'Database Check':
                 if has_success_message or (process.returncode == 0):
                     self.log(f"✅ [{name}] Database connection verified successfully", 'success')
@@ -270,7 +245,6 @@ class QuickLauncher:
                 else:
                     self.log(f"✅ [{name}] Client completed successfully", 'success')
             else:
-                # Generic process handling
                 if process.returncode != 0:
                     self.log(f"⚠️ [{name}] Process exited with code {process.returncode}", 'warning')
                     if show_errors and stderr_lines and not has_success_message:
@@ -278,7 +252,6 @@ class QuickLauncher:
                 else:
                     self.log(f"✅ [{name}] Process completed successfully", 'success')
                 
-            # Update Redis status if it was Redis server
             if name == 'Redis Server':
                 self.redis_started = False
                 
@@ -286,7 +259,6 @@ class QuickLauncher:
             self.log(f"❌ Error monitoring {name}: {e}", 'error')
 
     def kill_all(self):
-        """Terminate all processes"""
         killed_count = 0
         self.log("🛑 Terminating all processes...", 'warning')
         
@@ -310,22 +282,18 @@ class QuickLauncher:
             self.log("ℹ️ No active processes to terminate", 'info')
 
     def clear_log(self):
-        """Clear log display"""
         self.log_text.delete(1.0, tk.END)
         self.log("Logs cleared", 'info')
 
     def is_port_available(self, port):
-        """Check if port is available"""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             return s.connect_ex(('localhost', port)) != 0
     
     def on_closing(self):
-        """Handle window closing"""
         self.kill_all()
         self.root.destroy()
     
     def toggle_fullscreen(self, event=None):
-        """Toggle fullscreen mode with F11"""
         current_state = self.root.attributes('-fullscreen')
         self.root.attributes('-fullscreen', not current_state)
 
@@ -333,7 +301,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = QuickLauncher(root)
     root.protocol("WM_DELETE_WINDOW", app.on_closing)
-    # Bind F11 to toggle fullscreen and ESC to exit fullscreen
     root.bind('<F11>', app.toggle_fullscreen)
     root.bind('<Escape>', lambda e: root.attributes('-fullscreen', False))
     root.mainloop()
