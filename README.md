@@ -105,6 +105,10 @@ python server_thread_http.py 8891
 ```bash
 python client2.py
 python client2.py
+
+# jika ingin menerapkan load balancer tinggal menambahkan client lagi sesuai server yang ada
+python client2.py
+python client2.py
 ```
 Jalankan di terminal terpisah untuk setiap pemain
 
