@@ -283,6 +283,13 @@ class HttpServer:
 					"status": "fail",
 					"message": "Token, player_id, dan room_id wajib ada"
 				}), {'content-type': 'application/json'})
+    
+			player_session = get_session(token)
+			if not player_session:
+				return self.response(403, 'Forbidden', json.dumps({
+					"status": "fail",
+					"message": "Token tidak valid"
+				}), {'content-type': 'application/json'})
 
 			output = update_match(player_id, is_win)
 			delete_battle_state(room_id)
