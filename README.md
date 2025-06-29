@@ -97,8 +97,8 @@ Load balancer akan berjalan di port 8888
 
 #### 3. Jalankan Server Backend
 ```bash
-python server.py 8890
-python server.py 8891
+python server_thread_http.py 8890
+python server_thread_http.py 8891
 ```
 
 #### 4. Jalankan Client
@@ -447,6 +447,11 @@ https://github.com/user-attachments/assets/3fd8264a-6e47-445a-a202-179a0fc31e29
 ![alt text](./assets/document/image-13.png)
 
 
+## Kesimpulan 
+
+Runes & Steel Fighter membuktikan bahwa konsep pemrograman jaringan dapat diimplementasikan secara efektif dalam konteks game development. Load balancer berhasil menangani beberapa server backend secara bersamaan menggunakan algoritma round-robin, mampu mendistribusikan dan mengelola ratusan request dalam format JSON yang dikirim melalui HTTP headers dengan method GET, POST, dan PUT.
+
+Sistem ini mendemonstrasikan skalabilitas yang baik dimana multiple clients dapat berkomunikasi dengan multiple servers melalui satu titik entry (load balancer), memastikan tidak ada server yang overload dan response time tetap optimal. 
 
 ---
 
