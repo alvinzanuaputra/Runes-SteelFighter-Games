@@ -185,7 +185,7 @@ class QuickLauncher:
         
         self.log(f"🌐 Starting server on port {port}...", 'info')    
         self.server_ports.append(port)
-        self._start_process('server.py', f'Server:{port}', [str(port)], show_errors=True)
+        self._start_process('server_thread_http.py', f'Server:{port}', [str(port)], show_errors=True)
 
     def start_client(self):
         client_number = len([name for name, _ in self.processes if 'Client' in name]) + 1
