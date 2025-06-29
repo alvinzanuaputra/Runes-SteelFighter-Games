@@ -55,7 +55,6 @@ class LoginPage:
         self.is_fullscreen = False
 
     def handle_screen_resize(self, new_width, new_height):
-        """Handle screen resize and reposition game elements"""
         self.game.SCREEN_WIDTH = new_width
         self.game.SCREEN_HEIGHT = new_height
         
@@ -75,7 +74,6 @@ class LoginPage:
         self.register_button.x = self.x_offset
         
     def toggle_fullscreen(self):
-        """Toggle between fullscreen and windowed mode"""
         self.is_fullscreen = not self.is_fullscreen
         
         if self.is_fullscreen:
@@ -84,7 +82,6 @@ class LoginPage:
             self.handle_screen_resize(self.game.WINDOW_WIDTH, self.game.WINDOW_HEIGHT)
         
     def draw_bg(self):
-        """Draw background"""
         scaled_bg = pygame.transform.scale(self.game.bg_image, (self.game.SCREEN_WIDTH, self.game.SCREEN_HEIGHT))
         self.game.screen.blit(scaled_bg, (0, 0))
 

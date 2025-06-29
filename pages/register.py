@@ -18,7 +18,6 @@ class RegisterPage:
         self.is_fullscreen = False
 
     def handle_screen_resize(self, new_width, new_height):
-        """Handle screen resize and reposition game elements"""
         self.game.SCREEN_WIDTH = new_width
         self.game.SCREEN_HEIGHT = new_height
         
@@ -39,7 +38,6 @@ class RegisterPage:
         self.login_button.x = self.x_offset
         
     def toggle_fullscreen(self):
-        """Toggle between fullscreen and windowed mode"""
         self.is_fullscreen = not self.is_fullscreen
         
         if self.is_fullscreen:
