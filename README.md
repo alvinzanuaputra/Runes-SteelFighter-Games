@@ -62,11 +62,13 @@ cd Runes-SteelFighter-Games
 pip install pygame
 pip install psycopg2-binary
 pip install redis
+pip install SQLAlchemy
 ```
 
 ### 3. Setup Database
 ```bash
-# Buat database PostgreSQL dengan nama "progjar"
+# Buat database PostgreSQL dengan nama "progjar" terlebih dahulu
+
 # cek database
 py database/database.py
 
