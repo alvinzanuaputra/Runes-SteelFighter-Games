@@ -62,11 +62,13 @@ cd Runes-SteelFighter-Games
 pip install pygame
 pip install psycopg2-binary
 pip install redis
+pip install SQLAlchemy
 ```
 
 ### 3. Setup Database
 ```bash
-# Buat database PostgreSQL dengan nama "progjar"
+# Buat database PostgreSQL dengan nama "progjar" terlebih dahulu
+
 # cek database
 py database/database.py
 
@@ -97,12 +99,16 @@ Load balancer akan berjalan di port 8888
 
 #### 3. Jalankan Server Backend
 ```bash
-python server.py 8890
-python server.py 8891
+python server_thread_http.py 8890
+python server_thread_http.py 8891
 ```
 
 #### 4. Jalankan Client
 ```bash
+python client2.py
+python client2.py
+
+# jika ingin menerapkan load balancer tinggal menambahkan client lagi sesuai server yang ada
 python client2.py
 python client2.py
 ```
@@ -315,7 +321,7 @@ Content-type:application/json
 {"status": "ok", "message": "Battle updated", "self": {"token": "2-01a61685b53e4ea691e55811c05dcb17", "x": 650, "y": 380, "action": 1, "attack_type": 2, "health": 100, "armor": 1, "flip": false}, "enemy": {"token": "1-20e1e7f96c5645a7b50b30897020cc90", "x": 200.0, "y": 480.0, "action": 0, "attack_type": null, "health": 100, "armor": 1}}
 ```
 
-**1. POST /register HTTP/1.1**
+**7. POST /register HTTP/1.1**
 
 Endpoint ini akan mengirimkan sebuah hasil dari game dengan data berupa player_id, token, is_win, dan room_id. Di endpoint ini, server akan memvalidasi sesi menggunakan token, mencatat perubahan statistik ke database, dan menghapus state di server redis berdasarkan room_id. Server akan mengirimkan respons berupa kode status, status, pesan, dan headers. Berikut adalah contoh format protokol request dan respons:
 
@@ -447,6 +453,11 @@ https://github.com/user-attachments/assets/3fd8264a-6e47-445a-a202-179a0fc31e29
 ![alt text](./assets/document/image-13.png)
 
 
+## Kesimpulan 
+
+Runes & Steel Fighter membuktikan bahwa konsep pemrograman jaringan dapat diimplementasikan secara efektif dalam konteks game development. Load balancer berhasil menangani beberapa server backend secara bersamaan menggunakan algoritma round-robin, mampu mendistribusikan dan mengelola ratusan request dalam format JSON yang dikirim melalui HTTP headers dengan method GET, POST, dan PUT.
+
+Sistem ini mendemonstrasikan skalabilitas yang baik dimana multiple clients dapat berkomunikasi dengan multiple servers melalui satu titik entry (load balancer), memastikan tidak ada server yang overload dan response time tetap optimal. 
 
 ---
 
