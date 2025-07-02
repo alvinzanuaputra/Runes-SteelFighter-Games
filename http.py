@@ -97,9 +97,9 @@ class HttpServer:
 			return self.response(200, 'OK', output, headers)
 		elif (object_address == '/login'):
 			output = login(body)
-			token = json.loads(output).get('token')
-			user_id = json.loads(output).get('user_id')
-			if token:
+			if json.loads(output).get('status') == 'ok':
+				token = json.loads(output).get('token')
+				user_id = json.loads(output).get('user_id')
 				create_session(token, user_id)
 			headers['Content-type']='application/json'
 			if json.loads(output).get('status') == 'fail':

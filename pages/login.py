@@ -180,7 +180,7 @@ class LoginPage:
             response_data = json.loads(response)
 
             if response_data.get("status") == "ok":
-                self.game.player_id = response_data.get("player_id")
+                self.game.player_id = response_data.get("user_id")
                 self.game.token = response_data.get("token")
                 self.game.current_page = "home"
             else:

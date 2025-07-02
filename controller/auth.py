@@ -36,30 +36,29 @@ def register(body_raw: str) -> str:
 
     return json.dumps({"status": "ok", "message": "Registrasi berhasil"})
 
-def login(body_raw: str) -> str | None:
+def login(body_raw: str) -> str:
     try:
         data = json.loads(body_raw)
     except json.JSONDecodeError:
-        return json.dumps({"status": "fail", "message": "Body bukan JSON valid"}), None
+        return json.dumps({"status": "fail", "message": "Body bukan JSON valid"})
 
     username = data.get("username")
     password = data.get("password")
 
     if not username or not password:
-        return json.dumps({"status": "fail", "message": "Username dan password wajib diisi"}), None
+        return json.dumps({"status": "fail", "message": "Username dan password wajib diisi"})
 
     session = SessionLocal()
     user = session.query(User).filter(User.username == username).first()
 
     if user is None:
         session.close()
-        return json.dumps({"status": "fail", "message": "Username tidak ditemukan"}), None
+        return json.dumps({"status": "fail", "message": "Username tidak ditemukan"})
 
     if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
         session.close()
-        return json.dumps({"status": "fail", "message": "Password salah"}), None
+        return json.dumps({"status": "fail", "message": "Password salah"})
 
-    # Ambil data yang dibutuhkan sebelum close
     user_id = user.id
     username = user.username
 
@@ -72,8 +71,9 @@ def login(body_raw: str) -> str | None:
         "status": "ok",
         "message": "Login berhasil",
         "token": generated_token,
-        "player_id": user_id
+        "user_id": user_id
     })
+
 
 def logout(token: str) -> str | None:
     if not token:
